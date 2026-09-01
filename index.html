@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<!-- Srážkoměr · poslední verze -->
+<html lang="cs">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#070b14"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Srážkoměr"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png"/>
+<link rel="apple-touch-icon" href="./icon-180.png"/>
+<title>Srážkoměr</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b1320'/%3E%3Cpath d='M30 62a16 16 0 1 1 4-31 20 20 0 0 1 38 8 13 13 0 0 1-2 26z' fill='%233da9c9'/%3E%3Cg fill='%237fb4ff'%3E%3Crect x='34' y='68' width='4' height='12' rx='2'/%3E%3Crect x='48' y='68' width='4' height='16' rx='2'/%3E%3Crect x='62' y='68' width='4' height='10' rx='2'/%3E%3C/g%3E%3C/svg%3E"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600&display=swap');
+:root{
+  --text:#e8eefb;--muted:#9fb4d4;--muted2:#7f93b3;--accent:#8db8ff;
+  --bg1:#070b14;--bg2:#0a1120;--bg3:#0b1424;
+  --atm1:rgba(47,111,224,.22);--atm2:rgba(61,169,201,.12);--atm3:rgba(120,80,240,.14);
+  --glass-bg:rgba(255,255,255,.05);--glass-border:rgba(255,255,255,.1);
+  --card-bg1:rgba(255,255,255,.07);--card-bg2:rgba(255,255,255,.02);--card-border:rgba(255,255,255,.09);
+  --hl:rgba(255,255,255,.07);
+  --panel-bg:linear-gradient(170deg,rgba(24,33,52,.82),rgba(15,21,37,.9));
+  --panel-border:rgba(255,255,255,.09);--panel-hl:rgba(255,255,255,.06);
+  --cap:#9fb4d4;--readout:#cfe0ff;--legend:#aabdda;--legend-chip:rgba(255,255,255,.04);--legend-chip-bd:rgba(255,255,255,.07);
+}
+[data-theme="light"]{
+  --text:#172234;--muted:#4a5d78;--muted2:#64758f;--accent:#2f6fe0;
+  --bg1:#e9f1fb;--bg2:#dbe8f7;--bg3:#ccdef1;
+  --glass-bg:rgba(255,255,255,.62);--glass-border:rgba(30,55,90,.12);
+  --card-bg1:rgba(255,255,255,.72);--card-bg2:rgba(255,255,255,.42);--card-border:rgba(30,55,90,.1);
+  --hl:rgba(255,255,255,.5);
+  --panel-bg:linear-gradient(170deg,rgba(255,255,255,.9),rgba(231,241,253,.95));
+  --panel-border:rgba(30,55,90,.12);--panel-hl:rgba(255,255,255,.6);
+  --cap:#4a5d78;--readout:#2a4a6e;--legend:#4a5d78;--legend-chip:rgba(30,55,90,.05);--legend-chip-bd:rgba(30,55,90,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+@property --atm1{syntax:'<color>';inherits:true;initial-value:rgba(47,111,224,.22)}
+@property --atm2{syntax:'<color>';inherits:true;initial-value:rgba(61,169,201,.12)}
+@property --atm3{syntax:'<color>';inherits:true;initial-value:rgba(120,80,240,.14)}
+html{transition:--atm1 .9s ease,--atm2 .9s ease,--atm3 .9s ease}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(1100px 560px at 85% -12%,var(--atm1),transparent 60%),
+    radial-gradient(800px 480px at -12% 30%,var(--atm2),transparent 55%),
+    radial-gradient(900px 520px at 50% 115%,var(--atm3),transparent 60%),
+    linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 55%,var(--bg3) 100%);
+  background-attachment:fixed;color:var(--text);font-family:'Public Sans',sans-serif;
+  padding:calc(22px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(34px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));transition:color .3s, background .3s;
+}
+.wrap{max-width:720px;margin:0 auto;animation:fadein .55s cubic-bezier(.2,.7,.3,1)}
+@keyframes fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes chartin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.place{display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:13px;letter-spacing:.4px;font-weight:600}
+h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:31px;line-height:1.05;margin-top:6px;letter-spacing:-.6px;white-space:nowrap}
+h1 span{background:linear-gradient(92deg,#46c8e8 10%,#3d8de0 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hbtns{display:flex;gap:8px;flex-shrink:0}
+.btn{background:linear-gradient(160deg,rgba(122,180,255,.18),rgba(122,180,255,.06));border:1px solid rgba(122,180,255,.3);color:var(--accent);border-radius:50%;width:42px;height:42px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(47,111,224,.18), inset 0 1px 0 rgba(255,255,255,.08);transition:transform .15s, box-shadow .2s}
+.btn:hover{box-shadow:0 6px 22px rgba(47,111,224,.32), inset 0 1px 0 rgba(255,255,255,.1)}
+.btn:active{transform:scale(.92)}
+.now{display:flex;flex-direction:column;gap:12px;margin-top:18px;padding:14px 18px;border-radius:20px;background:linear-gradient(135deg,rgba(70,130,232,.18),rgba(61,169,201,.08) 60%,rgba(255,255,255,.02));border:1px solid rgba(122,180,255,.16);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 10px 30px rgba(0,0,0,.28), inset 0 1px 0 var(--hl)}
+[data-theme="light"] .now{background:linear-gradient(135deg,rgba(70,130,232,.16),rgba(61,169,201,.1) 60%,rgba(255,255,255,.5))}
+.now-main{display:flex;align-items:center;gap:14px}
+.now-txt{display:flex;flex-direction:column;line-height:1.1}
+.now-temp{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:34px;letter-spacing:-1px}
+.now-desc{font-size:13px;color:var(--muted);margin-top:3px;font-weight:500}
+.now-meta{font-size:12px;color:var(--muted2);margin-top:5px;font-family:'IBM Plex Mono',monospace}
+.now-meta b{color:var(--text);font-weight:500}
+.now-extra{display:flex;flex-wrap:wrap;gap:7px 8px;border-top:1px solid var(--glass-border);padding-top:11px}
+.now-extra span{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:4px 10px;font-family:'IBM Plex Mono',monospace}
+.now-extra b{color:var(--text);font-weight:500}
+.now .status{margin:0;background:none;border:none;border-top:1px solid var(--glass-border);border-radius:0;padding:11px 2px 1px;backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;align-items:center;gap:9px}
+.toolbar{display:flex;gap:10px;margin-top:18px;flex-direction:column;align-items:stretch}
+.searchwrap{position:relative;width:100%}
+.searchwrap .si{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--muted2);fill:none;stroke-width:2;pointer-events:none}
+#q{width:100%;color:var(--text);border-radius:14px;padding:11px 12px 11px 36px;font-size:14px;font-family:'Public Sans',sans-serif;outline:none;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:border-color .2s, box-shadow .2s}
+#q:focus{border-color:rgba(70,200,232,.55);box-shadow:0 0 0 3px rgba(61,169,201,.14)}
+#q::placeholder{color:var(--muted2)}
+.sug{position:absolute;top:calc(100% + 6px);left:0;right:0;border-radius:14px;overflow:hidden;z-index:20;background:rgba(13,22,38,.95);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+[data-theme="light"] .sug{background:rgba(245,249,255,.97);border-color:rgba(30,55,90,.14)}
+.sug:empty{display:none}
+.sug div[data-lat]{padding:10px 13px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--glass-border);transition:background .12s}
+.sug div[data-lat]:last-child{border-bottom:none}
+.sug div[data-lat]:hover{background:rgba(70,200,232,.12)}
+.sug .muted{color:var(--muted2);font-size:11px;margin-top:1px}
+.favbar{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.favbar::-webkit-scrollbar{display:none}
+.fav{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--muted);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;font-family:'Public Sans',sans-serif;white-space:nowrap;transition:background .15s}
+.fav.active{background:linear-gradient(135deg,#2f6fe0,#3da9c9);color:#fff;border-color:transparent}
+.fav.add,.fav.loc{font-size:15px;padding:6px 11px;color:var(--accent)}
+.favx{opacity:.55;font-size:15px;line-height:1;margin-left:-1px}
+.favx:hover{opacity:1}
+.seg{display:inline-flex;border-radius:13px;padding:3px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.seg button{background:none;border:none;color:var(--muted);padding:7px 6px;border-radius:10px;cursor:pointer;font-size:12px;font-family:'IBM Plex Mono',monospace;white-space:nowrap;transition:color .15s, background .2s, box-shadow .2s}
+.seg button.on{background:linear-gradient(135deg,#2f6fe0,#3da9c9);color:#fff;box-shadow:0 2px 12px rgba(61,169,201,.45), inset 0 1px 0 rgba(255,255,255,.18)}
+.segbar{display:inline-flex;align-items:center;gap:2px;flex-wrap:nowrap;width:max-content}
+.seggrp{display:inline-flex;gap:2px}
+.seg-div{width:1px;align-self:stretch;margin:5px 6px;background:var(--glass-border)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.card{border-radius:18px;padding:15px 13px;background:linear-gradient(165deg,var(--card-bg1),var(--card-bg2));border:1px solid var(--card-border);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 26px rgba(0,0,0,.18), inset 0 1px 0 var(--hl)}
+.card .lbl{font-size:11.5px;letter-spacing:.4px;text-transform:uppercase;font-weight:600}
+.card .val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:500;margin-top:7px}
+.card .sub{font-size:11px;color:var(--muted2);margin-top:2px}
+.status{display:inline-flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text);margin-bottom:14px;min-height:20px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:8px 14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,#46c8e8,#2f6fe0);box-shadow:0 0 8px rgba(70,200,232,.8);flex-shrink:0}
+.advisories{display:flex;flex-direction:column;gap:8px;margin-top:11px}
+.advisory{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:1.45;color:var(--readout);background:linear-gradient(135deg,rgba(230,161,90,.12),rgba(230,161,90,.045));border:1px solid rgba(230,161,90,.34);border-radius:14px;padding:10px 13px}
+.advisory svg{width:18px;height:18px;flex:0 0 18px;margin-top:1px;stroke:#e6a15a}
+.advisory b{color:var(--text);font-weight:700}
+.advisory.high{background:linear-gradient(135deg,rgba(224,90,70,.15),rgba(224,90,70,.05));border-color:rgba(224,90,70,.42)}
+.advisory.high svg{stroke:#ef7a63}
+.panel{border-radius:22px;padding:18px 14px 13px;background:var(--panel-bg);border:1px solid var(--panel-border);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 14px 40px rgba(0,0,0,.22), inset 0 1px 0 var(--panel-hl)}
+.panel .cap{font-size:11.5px;color:var(--cap);font-family:'IBM Plex Mono',monospace;padding-bottom:10px;letter-spacing:.3px}
+#chart{display:block;width:100%;cursor:crosshair}
+#chart rect.bar{transition:opacity .15s}
+.readout{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--readout);min-height:18px;padding:11px 2px 0}
+.legend{display:flex;flex-wrap:wrap;gap:7px;padding:11px 2px 2px;font-size:10.5px;color:var(--legend);font-family:'IBM Plex Mono',monospace}
+.legend span{display:inline-flex;align-items:center;gap:5px;background:var(--legend-chip);border:1px solid var(--legend-chip-bd);border-radius:999px;padding:3px 9px}
+.dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+.dot-line{width:16px;height:3px;border-radius:2px;display:inline-block}
+.mappanel{margin-top:14px}
+.mapbar{display:flex;align-items:center;justify-content:space-between;gap:10px 12px;flex-wrap:wrap;padding-bottom:11px}
+.mapbar .cap{padding-bottom:0}
+.mapwrap{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--glass-border);background:rgba(0,0,0,.28);height:clamp(320px,56vw,460px)}
+.mapwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.maphint{font-size:10.5px;color:var(--muted2);font-family:'IBM Plex Mono',monospace;padding:9px 2px 0;text-align:right}
+.foot{margin-top:16px;display:flex;justify-content:space-between;font-size:11px;color:var(--muted2);font-family:'IBM Plex Mono',monospace}
+#ver{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;transition:color .15s}
+#ver:hover{color:var(--text)}
+.modal{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-end;justify-content:center;background:rgba(2,8,18,.62)}
+.modal[hidden]{display:none}
+.modal-card{width:100%;max-width:560px;max-height:84vh;display:flex;flex-direction:column;background:var(--glass-bg);border:1px solid var(--glass-border);border-bottom:none;border-radius:20px 20px 0 0;box-shadow:0 -12px 44px rgba(0,0,0,.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);animation:sheetin .3s cubic-bezier(.2,.7,.3,1)}
+@keyframes sheetin{from{transform:translateY(46px);opacity:.3}to{transform:none;opacity:1}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 13px;border-bottom:1px solid var(--glass-border);color:var(--text);font-size:15px;font-weight:600}
+.modal-x{background:none;border:none;color:var(--muted2);font-size:26px;line-height:1;cursor:pointer;padding:0 2px;transition:color .15s}
+.modal-x:hover{color:var(--text)}
+.modal-body{overflow:auto;padding:4px 18px calc(24px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
+.logentry{padding:14px 0;border-bottom:1px solid var(--glass-border)}
+.logentry:last-child{border-bottom:none}
+.logentry .lh{display:flex;align-items:baseline;gap:9px;margin-bottom:7px}
+.logentry .lv{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);font-size:12.5px;background:var(--legend-chip);border:1px solid var(--legend-chip-bd);border-radius:999px;padding:2px 9px}
+.logentry .ld{font-size:11.5px;color:var(--muted2);font-family:'IBM Plex Mono',monospace}
+.logentry ul{margin:0;padding-left:17px;display:flex;flex-direction:column;gap:5px}
+.logentry li{font-size:13px;line-height:1.45;color:var(--readout)}
+.credit{margin-top:6px;text-align:center;font-size:11px;color:var(--muted2);font-family:'IBM Plex Mono',monospace}
+.credit b{color:var(--accent);font-weight:500}
+.err{color:#ff9b9b}
+svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="place">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span id="place">zjišťuji polohu…</span>
+      </div>
+      <h1>Srážkoměr <span id="rangeLbl">48 h</span></h1>
+    </div>
+    <div class="hbtns">
+      <button class="btn" id="theme" aria-label="přepnout vzhled" title="přepnout vzhled"><svg id="themeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg></button>
+      <button class="btn" id="refresh" aria-label="obnovit" title="obnovit"><svg id="refIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></button>
+    </div>
+  </div>
+
+  <div class="now" id="nowPanel">
+    <div class="now-main">
+      <svg id="nowIcon" viewBox="0 0 60 60" width="76" height="76" style="flex-shrink:0;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))"></svg>
+      <div class="now-txt">
+        <div class="now-temp" id="nowTemp">—</div>
+        <div class="now-desc" id="nowDesc">aktuální počasí</div>
+        <div class="now-meta" id="nowMeta"></div>
+      </div>
+    </div>
+    <div class="now-extra" id="nowExtra" style="display:none"></div>
+    <div class="status" id="status">Načítám předpověď…</div>
+    <div class="advisories" id="advisories" style="display:none"></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="searchwrap">
+      <svg class="si" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="q" type="text" placeholder="hledat město…" autocomplete="off" spellcheck="false"/>
+      <div class="sug" id="sug"></div>
+    </div>
+    <div class="favbar" id="favbar"></div>
+    <div class="seg segbar">
+      <span id="seg" class="seggrp">
+        <button data-mode="24h">24 h</button>
+        <button data-mode="48h" class="on">48 h</button>
+        <button data-mode="7d">14 dní</button>
+      </span>
+      <span class="seg-div"></span>
+      <span id="segMetric" class="seggrp">
+        <button data-metric="precip" class="on">srážky</button>
+        <button data-metric="wind">vítr</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="cards" id="cards">
+    <div class="card"><div class="lbl" id="l1"></div><div class="val" id="v1">—</div><div class="sub" id="s1"></div></div>
+    <div class="card"><div class="lbl" id="l2"></div><div class="val" id="v2">—</div><div class="sub" id="s2"></div></div>
+    <div class="card"><div class="lbl" id="l3"></div><div class="val" id="v3">—</div><div class="sub" id="s3"></div></div>
+    <div class="card"><div class="lbl" id="l4"></div><div class="val" id="v4">—</div><div class="sub" id="s4"></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="cap" id="cap">srážky mm/h · teplota °C — po hodinách</div>
+    <svg id="chart" viewBox="0 0 360 260" height="260" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="readout" id="readout">Klepni nebo najeď na sloupec pro detail.</div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="panel mappanel">
+    <div class="mapbar">
+      <div class="cap">meteomapa · Windy</div>
+      <span class="seg"><span id="segMap" class="seggrp">
+        <button data-ov="radar" class="on">radar</button>
+        <button data-ov="rain">srážky</button>
+        <button data-ov="wind">vítr</button>
+        <button data-ov="temp">teplota</button>
+      </span></span>
+    </div>
+    <div class="mapwrap"><iframe id="windyFrame" title="Windy meteomapa" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe></div>
+    <div class="maphint">radar do –1 h · předpověď ECMWF · zdroj Windy.com</div>
+  </div>
+
+  <div class="foot"><span>data: Open-Meteo · Windy</span><span id="updated"></span></div>
+  <div class="credit">vyrobil <b>Martin Wohanka</b> · <span id="ver" role="button" tabindex="0" title="zobrazit seznam změn"></span></div>
+</div>
+
+<div class="modal" id="logModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>Seznam změn</span><button class="modal-x" id="logClose" aria-label="zavřít">×</button></div>
+    <div class="modal-body" id="logBody"></div>
+  </div>
+</div>
+
+<script>
+const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
+const VERSION="1.26", VERSION_DATE="23. 8. 2026";
+/* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
+const CHANGELOG=[
+  {v:"1.26",d:"23. 8. 2026",c:["V 48h předpovědi je popisek i ikona vždy po 3 hodinách, i na šířku a na desktopu."]},
+  {v:"1.25",d:"23. 8. 2026",c:["Denní výhled zkrácen z 16 na 14 dní.","Hodinový graf zahustí popisky podle dostupné šířky – na šířku displeje i na desktopu ukáže každou hodinu."]},
+  {v:"1.24",d:"23. 8. 2026",c:["Zrušen zámek orientace – nainstalovaná aplikace se nově otočí i na šířku."]},
+  {v:"1.23",d:"23. 8. 2026",c:["Denní výhled rozšířen ze 7 na 16 dní (maximum modelu).","Popisky dnů se na úzkých displejích automaticky prořídnou.","Za 10. dnem je graf označen jako orientační – dál už předpověď ztrácí přesnost."]},
+  {v:"1.22",d:"22. 8. 2026",c:["Oprava dat u záznamů v seznamu změn – verze 1.08 až 1.21 vznikly 22. 8. 2026."]},
+  {v:"1.21",d:"22. 8. 2026",c:["Dlaždice s předpovědním úhrnem za poloviční okno nahrazena skutečným úhrnem za posledních 24 h."]},
+  {v:"1.20",d:"22. 8. 2026",c:["Úhrn srážek za uplynulých 24 h se přesunul do dlaždic nad grafem; v režimu větru se skrývá."]},
+  {v:"1.19",d:"22. 8. 2026",c:["Úhrn srážek za uplynulých 24 h se nově zobrazí i po offline načtení z uložených dat."]},
+  {v:"1.18",d:"22. 8. 2026",c:["Nový údaj v kartě počasí: úhrn srážek za uplynulých 24 hodin ve zvolené lokalitě."]},
+  {v:"1.17",d:"22. 8. 2026",c:["Oprava zobrazení na iPhonu – horní lišta s tlačítky už se neschovává pod stavovým řádkem a Dynamic Island.","Ošetřeny i boční okraje při otočení na šířku a spodní okraj seznamu změn."]},
+  {v:"1.16",d:"22. 8. 2026",c:["Aplikace je instalovatelná jako PWA – vlastní ikona, manifest a offline režim přes service worker (lze přidat na plochu)."]},
+  {v:"1.15",d:"22. 8. 2026",c:["Textová doporučení u počasí jsou kreativnější a střídají se mezi více formulacemi."]},
+  {v:"1.14",d:"22. 8. 2026",c:["Pozadí aplikace se dynamicky přizpůsobuje aktuálnímu počasí a dni/noci ve zvolené lokalitě (plynulý přechod)."]},
+  {v:"1.13",d:"22. 8. 2026",c:["Přidán seznam změn – otevře se kliknutím na verzi v zápatí stránky."]},
+  {v:"1.12",d:"22. 8. 2026",c:["Osa srážek nově standardně do 10 mm; při vyšších úhrnech se škáluje dynamicky na čitelné hodnoty."]},
+  {v:"1.11",d:"22. 8. 2026",c:["Kontextové rady pod aktuálním počasím: deštník, UV index, silný vítr, vedro, mráz, bouřky a mlha."]},
+  {v:"1.10",d:"22. 8. 2026",c:["Oprava popisků dnů ve večerních hodinách (chyba dvojího započtení časové zóny).","Hodinový graf nově začíná na aktuální hodině."]},
+  {v:"1.09",d:"22. 8. 2026",c:["Meteomapa se v rámci ČR zobrazí celá; mimo ČR se přiblíží na vybrané místo."]},
+  {v:"1.08",d:"22. 8. 2026",c:["Přidána meteorologická mapa Windy pod grafem (radar / srážky / vítr / teplota)."]},
+  {v:"1.07 a starší",d:"14. 6. 2026",c:["Hodinová a denní předpověď srážek a teploty, samostatný režim větru.","Vyhledávání měst, oblíbená místa a geolokace.","Světlý a tmavý vzhled, offline cache poslední předpovědi."]}
+];
+let coords=null,timer=null,ageTimer=null,mode='48h',metric='precip',theme='dark',hourlyData=null,dailyData=null,past24mm=null,tzOffsetMs=0,lastFetchTs=0,offline=false,favs=[];
+const $=id=>document.getElementById(id);
+
+let memPref={};
+function savePref(k,v){memPref[k]=v;try{localStorage.setItem(k,v);}catch(e){}}
+function loadPref(k,def){try{const v=localStorage.getItem(k);if(v!==null)return v;}catch(e){}return (k in memPref)?memPref[k]:def;}
+
+/* paleta grafu podle motivu */
+function CP(){const L=theme==='light';return{
+  grid:L?'rgba(30,55,90,0.09)':'rgba(255,255,255,0.05)',
+  axis:L?'rgba(30,55,90,0.28)':'rgba(255,255,255,0.15)',
+  tick:L?'rgba(30,55,90,0.32)':'rgba(255,255,255,0.2)',
+  sep:L?'rgba(30,55,90,0.25)':'rgba(255,255,255,0.18)',
+  sepTx:L?'rgba(30,55,90,0.5)':'rgba(255,255,255,0.38)',
+  num:L?'#5a6f8e':'#7f93b3', num2:L?'#5a6f8e':'#7f93a8',
+  title:L?'#2f6fe0':'#8db8ff', temp:L?'#5f7596':'#a8bbc8',
+  barTx:L?'#16202e':'#ffffff', cStroke:L?'#ffffff':'#0b1320',
+  dayTx:L?'#3a4a63':'#9fb4d4', dateTx:L?'#6a7a93':'#5f7196',
+  gust:L?'#3d86c8':'#cfe0ff'
+};}
+
+/* plynulé barvy */
+function hex2rgb(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+function rgb2hex(a){return '#'+a.map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('');}
+function gradColor(v,stops){if(v<=stops[0][0])return stops[0][1];for(let i=1;i<stops.length;i++){if(v<=stops[i][0]){const [v0,h0]=stops[i-1],[v1,h1]=stops[i],t=(v-v0)/((v1-v0)||1),a=hex2rgb(h0),b=hex2rgb(h1);return rgb2hex([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]);}}return stops[stops.length-1][1];}
+const PRECIP_STOPS=[[0,'#1a2b3c'],[0.3,'#00c8dc'],[2,'#38d46a'],[5,'#f5d020'],[10,'#f07820'],[20,'#e02828']];
+const PRECIP_DAY_STOPS=[[0,'#1a2b3c'],[1,'#00c8dc'],[5,'#38d46a'],[10,'#f5d020'],[20,'#f07820'],[35,'#e02828']];
+const WIND_STOPS=[[0,'#4a6fa5'],[3.4,'#3da9c9'],[5.5,'#38d46a'],[8,'#f5d020'],[10.8,'#f07820'],[13.9,'#e02828'],[22,'#a81818']];
+function color(mm){return gradColor(mm,PRECIP_STOPS);}
+function colorDay(mm){return gradColor(mm,PRECIP_DAY_STOPS);}
+function windColor(ms){return gradColor(ms,WIND_STOPS);}
+
+function label(mm){if(mm<=0.05)return"beze srážek";if(mm<0.5)return"mrholení";if(mm<2)return"slabý déšť";if(mm<5)return"déšť";if(mm<10)return"silný déšť";return"přívalový déšť";}
+function labelDay(mm){if(mm<=0.1)return"beze srážek";if(mm<2)return"slabé srážky";if(mm<5)return"déšť";if(mm<10)return"vydatný déšť";if(mm<20)return"silný déšť";return"extrémní srážky";}
+const KMH2MS=1/3.6;
+function windLabel(ms){if(ms<0.5)return"bezvětří";if(ms<3.4)return"slabý vítr";if(ms<5.5)return"mírný vítr";if(ms<8)return"čerstvý vítr";if(ms<10.8)return"silný vítr";if(ms<13.9)return"velmi silný";if(ms<17.2)return"vichřice";return"orkán";}
+const WIND_LEGEND=[{c:'#4a6fa5',t:'slabý <3.4'},{c:'#3da9c9',t:'mírný <5.5'},{c:'#38d46a',t:'čerstvý <8'},{c:'#f5d020',t:'silný <10.8'},{c:'#f07820',t:'velmi silný <13.9'},{c:'#e02828',t:'vichřice ≥13.9'},{c:'#7fb4ff',t:'nárazy',line:true}];
+function dirName(deg){const n=['S','SV','V','JV','J','JZ','Z','SZ'];return n[Math.round(deg/45)%8];}
+function domDir(arr){let sx=0,sy=0;arr.forEach(a=>{const r=a.deg*Math.PI/180,w=Math.max(0.1,a.w);sx+=Math.cos(r)*w;sy+=Math.sin(r)*w;});if(sx===0&&sy===0)return'—';let d=Math.atan2(sy,sx)*180/Math.PI;if(d<0)d+=360;return dirName(d);}
+function wmoDesc(code){if(code===0)return"jasno";if(code===1)return"skoro jasno";if(code===2)return"polojasno";if(code===3)return"zataženo";if(code===45||code===48)return"mlha";if(code>=51&&code<=57)return"mrholení";if(code>=61&&code<=67)return"déšť";if(code>=71&&code<=77)return"sněžení";if(code>=80&&code<=82)return"přeháňky";if(code===85||code===86)return"sněhové přeháňky";if(code>=95)return"bouřka";return"oblačno";}
+
+function iconDefs(){return `
+  <radialGradient id="gSun" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffefb0"/><stop offset="0.55" stop-color="#f9cb4a"/><stop offset="1" stop-color="#ef9f2a"/></radialGradient>
+  <linearGradient id="gCloud" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6eefa"/><stop offset="1" stop-color="#90a6c8"/></linearGradient>
+  <linearGradient id="gCloudDark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6c5dc"/><stop offset="1" stop-color="#67809f"/></linearGradient>
+  <linearGradient id="gMoon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f8ff"/><stop offset="1" stop-color="#aebfe2"/></linearGradient>
+  <linearGradient id="gBolt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5a623"/></linearGradient>
+  <linearGradient id="gDrop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fd8ec"/><stop offset="1" stop-color="#2f8fd0"/></linearGradient>`;}
+function wIcon(code,isDay,cx,cy,s){
+  const r=s/2;
+  const sun=(ox=0,oy=0,sc=1)=>{const rr=r*0.34*sc;let p=`<circle cx="${cx+ox}" cy="${cy+oy}" r="${rr*1.7}" fill="#f9cb4a" opacity="0.18"/>`;for(let a=0;a<360;a+=45){const rad=a*Math.PI/180;p+=`<line x1="${(cx+ox+Math.cos(rad)*rr*1.45).toFixed(1)}" y1="${(cy+oy+Math.sin(rad)*rr*1.45).toFixed(1)}" x2="${(cx+ox+Math.cos(rad)*rr*1.95).toFixed(1)}" y2="${(cy+oy+Math.sin(rad)*rr*1.95).toFixed(1)}" stroke="#f9cb4a" stroke-width="1.3" stroke-linecap="round"/>`;}p+=`<circle cx="${cx+ox}" cy="${cy+oy}" r="${rr}" fill="url(#gSun)"/>`;return p;};
+  const moon=(ox=0,oy=0,sc=1)=>{const rr=r*0.5*sc;return `<circle cx="${cx+ox}" cy="${cy+oy}" r="${rr*1.4}" fill="#aebfe2" opacity="0.13"/><path d="M${cx+ox+rr*0.45},${cy+oy-rr} a${rr},${rr} 0 1 0 0,${rr*2} a${rr*0.76},${rr*0.76} 0 1 1 0,${-rr*2} Z" fill="url(#gMoon)"/>`;};
+  const cloud=(ox=0,oy=0,sc=1,grad='gCloud')=>{const c=r*sc;return `<g fill="url(#${grad})"><circle cx="${cx+ox-c*0.42}" cy="${cy+oy+c*0.1}" r="${c*0.4}"/><circle cx="${cx+ox+c*0.04}" cy="${cy+oy-c*0.18}" r="${c*0.52}"/><circle cx="${cx+ox+c*0.48}" cy="${cy+oy+c*0.12}" r="${c*0.38}"/><rect x="${cx+ox-c*0.62}" y="${cy+oy+c*0.02}" width="${c*1.22}" height="${c*0.48}" rx="${c*0.24}"/></g>`;};
+  const drop=(x,y)=>{const d=2.1;return `<path d="M${x},${y} c ${d*0.85},${d*1.1} ${d*0.55},${d*1.9} 0,${d*1.9} c ${-d*0.55},0 ${-d*0.85},${-d*0.8} 0,${-d*1.9} Z" fill="url(#gDrop)"/>`;};
+  const drops=(n)=>{let p='';[-r*0.36,0,r*0.36].slice(0,n).forEach((x,k)=>{p+=drop(cx+x,cy+r*0.42+(k%2?2:0));});return p;};
+  const flake=(x,y)=>{let p=`<g stroke="#cfeaf5" stroke-width="1" stroke-linecap="round">`;for(let a=0;a<180;a+=60){const rad=a*Math.PI/180,l=1.8;p+=`<line x1="${(x-Math.cos(rad)*l).toFixed(1)}" y1="${(y-Math.sin(rad)*l).toFixed(1)}" x2="${(x+Math.cos(rad)*l).toFixed(1)}" y2="${(y+Math.sin(rad)*l).toFixed(1)}"/>`;}return p+'</g>';};
+  const flakes=()=>{let p='';[-r*0.36,0,r*0.36].forEach((x,k)=>{p+=flake(cx+x,cy+r*0.66+(k%2?1.5:0));});return p;};
+  const bolt=()=>`<path d="M${cx+2.4},${cy+r*0.2} L${cx-2.6},${cy+r*0.62} L${cx-0.3},${cy+r*0.62} L${cx-2},${cy+r*1.15} L${cx+2.8},${cy+r*0.55} L${cx+0.6},${cy+r*0.55} Z" fill="url(#gBolt)"/>`;
+  const fog=()=>{let p='';[0.34,0.6,0.86].forEach((f,k)=>{p+=`<line x1="${cx-r*0.52+(k===1?2.5:0)}" y1="${cy-r*0.08+f*r}" x2="${cx+r*0.52-(k===2?2.5:0)}" y2="${cy-r*0.08+f*r}" stroke="#9db3d0" stroke-width="1.3" stroke-linecap="round" opacity="${1-k*0.22}"/>`;});return p;};
+  if(code===0) return isDay?sun():moon();
+  if(code===1||code===2){const cel=isDay?sun(-r*0.3,-r*0.34,0.74):moon(-r*0.3,-r*0.36,0.6);return `<g>${cel}${cloud(r*0.1,r*0.16,0.8)}</g>`;}
+  if(code===3) return cloud(0,0,0.95,'gCloudDark');
+  if(code===45||code===48) return `<g>${cloud(0,-r*0.24,0.78,'gCloudDark')}${fog()}</g>`;
+  if(code>=51&&code<=57) return `<g>${cloud(0,-r*0.26,0.84)}${drops(2)}</g>`;
+  if((code>=61&&code<=67)||(code>=80&&code<=82)) return `<g>${cloud(0,-r*0.26,0.84,'gCloudDark')}${drops(3)}</g>`;
+  if((code>=71&&code<=77)||code===85||code===86) return `<g>${cloud(0,-r*0.26,0.84)}${flakes()}</g>`;
+  if(code>=95) return `<g>${cloud(0,-r*0.26,0.84,'gCloudDark')}${bolt()}</g>`;
+  return cloud(0,0,0.95);
+}
+function dirArrow(dir,cx,cy,s,col){const a=(dir+180)*Math.PI/180,dx=Math.sin(a),dy=-Math.cos(a),r=s/2,hx=cx+dx*r,hy=cy+dy*r,tx=cx-dx*r,ty=cy-dy*r,rot=(vx,vy,p)=>[vx*Math.cos(p)-vy*Math.sin(p),vx*Math.sin(p)+vy*Math.cos(p)],wa=0.5,hl=r*0.7,[lx,ly]=rot(-dx,-dy,wa),[rx,ry]=rot(-dx,-dy,-wa);return `<g stroke="${col}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}"/><path d="M${(hx+lx*hl).toFixed(1)},${(hy+ly*hl).toFixed(1)} L${hx.toFixed(1)},${hy.toFixed(1)} L${(hx+rx*hl).toFixed(1)},${(hy+ry*hl).toFixed(1)}"/></g>`;}
+
+function cardinalPath(pts){if(pts.length<2)return'';let d=`M${pts[0].x},${pts[0].y}`;for(let i=0;i<pts.length-1;i++){const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];d+=` C${p1.x+(p2.x-p0.x)/4.5},${p1.y+(p2.y-p0.y)/4.5},${p2.x-(p3.x-p1.x)/4.5},${p2.y-(p3.y-p1.y)/4.5},${p2.x},${p2.y}`;}return d;}
+function niceVal(v){if(v===0)return'0';if(Math.abs(v)<1)return v.toFixed(1);return Number.isInteger(v)?String(v):v.toFixed(1);}
+/* horní hranice osy srážek: standardně floor (10), nad ní dynamicky zaokrouhleno na sudé/hezké číslo */
+function niceTop(dataMax,floor){if(dataMax<=floor)return floor;const step=dataMax<=20?2:dataMax<=40?4:dataMax<=100?10:20;return Math.ceil(dataMax/step)*step;}
+function setCard(i,lbl,col,val,sub){$("l"+i).textContent=lbl;$("l"+i).style.color=col;$("v"+i).textContent=val;$("s"+i).textContent=sub||'';}
+function fmtMm(v){return (v<0.05?'0':v<10?v.toFixed(1):String(Math.round(v)))+" mm";}
+function setLegend(items){$("legend").innerHTML=items.map(it=>it.line?`<span><i class="dot-line" style="background:${it.c}"></i>${it.t}</span>`:`<span><i class="dot" style="background:${it.c}"></i>${it.t}</span>`).join('');}
+function dims(B){const svgEl=$("chart"),W0=svgEl.parentElement.clientWidth||360,SVG_W=W0,SVG_H=260,L=46,R=(metric==='wind')?20:46,T=(B>34?20:(B>24?22:20)),PW=SVG_W-L-R,PH=SVG_H-T-B;svgEl.setAttribute('viewBox',`0 0 ${SVG_W} ${SVG_H}`);svgEl.setAttribute('height',SVG_H);return {svgEl,SVG_W,SVG_H,L,R,T,B,PW,PH};}
+function attachBars(svgEl,data,readoutFn){const bars=[...svgEl.querySelectorAll('rect.bar')];if(!bars.length)return;const cols=bars.map(b=>({i:+b.dataset.i,c:+b.getAttribute('x')+(+b.getAttribute('width'))/2,el:b}));let cur=-1;const pick=e=>{const r=svgEl.getBoundingClientRect(),vb=svgEl.viewBox.baseVal,x=(e.clientX-r.left)*(vb.width/r.width);let best=cols[0],bd=Infinity;cols.forEach(c=>{const d=Math.abs(c.c-x);if(d<bd){bd=d;best=c;}});return best;};const show=b=>{if(cur===b.i)return;cur=b.i;cols.forEach(c=>c.el.style.opacity=c.i===b.i?'0.7':'');$("readout").textContent=readoutFn(data[b.i]);};svgEl.onmousemove=e=>show(pick(e));svgEl.onclick=e=>show(pick(e));svgEl.onmouseleave=()=>{cur=-1;cols.forEach(c=>c.el.style.opacity='');};}
+function nowLine(o,L,T,PW,PH,bw){const nowL=new Date(Date.now()+tzOffsetMs),frac=(nowL.getMinutes()*60+nowL.getSeconds())/3600,nx=L+frac*bw;if(nx>=L&&nx<=L+PW){o.s+=`<line x1="${nx.toFixed(1)}" y1="${T}" x2="${nx.toFixed(1)}" y2="${T+PH}" stroke="#46c8e8" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.85"/><text x="${(nx+3).toFixed(1)}" y="${T+8}" fill="#46c8e8" font-size="8" font-family="IBM Plex Mono,monospace">teď</text>`;}}
+
+/* srážky hodinové */
+function renderHourly(data){
+  const C=CP();
+  const hrs=data.length;
+  const total=data.reduce((s,d)=>s+d.mm,0);
+  const first=data.find(d=>d.mm>=0.1), temps=data.map(d=>d.temp), tMin=Math.min(...temps), tMax=Math.max(...temps), maxGust=Math.max(...data.map(d=>d.gust));
+  setCard(1,`úhrn ${hrs} h`,"#46c8e8",total.toFixed(1)+" mm");setCard(2,"spadlo za 24 h","#5b8df0",past24mm!=null?fmtMm(past24mm):"—","uplynulých");setCard(3,"teplota","#7d97c0",`${tMin.toFixed(0)}° – ${tMax.toFixed(0)}°C`);setCard(4,"max náraz větru","#5b8df0",maxGust.toFixed(1)+" m/s");
+  $("status").innerHTML=first?`Nejbližší srážky <b>&nbsp;${first.dayLabel} v ${first.hour}&nbsp;</b> (${first.mm.toFixed(1)} mm, ${first.prob} %).`:`Příštích ${hrs} hodin se srážky nečekají. ☀️`;
+  $("cap").textContent="srážky mm/h · teplota °C — po hodinách";
+  setLegend([{c:'#00c8dc',t:'mrholení <0.5'},{c:'#38d46a',t:'slabý <2'},{c:'#f5d020',t:'déšť <5'},{c:'#f07820',t:'silný <10'},{c:'#e02828',t:'přívalový'},{c:C.temp,t:'teplota',line:true}]);
+  const {svgEl,SVG_W,L,T,PW,PH}=dims(40);
+  const N=data.length, bw=PW/N, bcx=i=>L+i*bw+bw/2, bLeft=i=>L+i*bw+1, bWidth=Math.max(1,bw-2);
+  const maxMm=niceTop(Math.max(0,...data.map(d=>d.mm)),10), pY=mm=>T+PH-(mm/maxMm)*PH;
+  const tPad=(tMax-tMin)*0.15||2, tLo=tMin-tPad, tHi=tMax+tPad, tY=t=>T+PH-((t-tLo)/(tHi-tLo))*PH;
+  const o={s:`<defs>${iconDefs()}<linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.temp}" stop-opacity="0.2"/><stop offset="1" stop-color="${C.temp}" stop-opacity="0.01"/></linearGradient><clipPath id="cp"><rect x="${L}" y="${T}" width="${PW}" height="${PH}"/></clipPath></defs>`};
+  [maxMm*0.25,maxMm*0.5,maxMm*0.75,maxMm].forEach(gm=>{o.s+=`<line x1="${L}" y1="${pY(gm)}" x2="${L+PW}" y2="${pY(gm)}" stroke="${C.grid}" stroke-dasharray="3 4"/>`;});
+  const ti=data.findIndex(d=>d.dayLabel==='zítra');
+  if(ti>0){const sx=L+ti*bw;o.s+=`<line x1="${sx}" y1="${T}" x2="${sx}" y2="${T+PH+4}" stroke="${C.sep}" stroke-dasharray="4 3"/><text x="${sx+4}" y="${T+10}" fill="${C.sepTx}" font-size="9" font-family="IBM Plex Mono,monospace">zítra</text>`;}
+  data.forEach((d,i)=>{const barH=Math.max(1,(d.mm/maxMm)*PH);o.s+=`<rect class="bar" x="${bLeft(i)}" y="${T+PH-barH}" width="${bWidth}" height="${barH}" rx="2" fill="${color(d.mm)}" data-i="${i}"/>`;});
+  const mmV=data.map(d=>d.mm);
+  for(let i=0;i<N;i++){const mm=mmV[i];if(mm<0.3)continue;const isPeak=(i===0||mm>=mmV[i-1])&&(i===N-1||mm>=mmV[i+1])&&(i===0||i===N-1||(mm-mmV[i-1]>=0.1&&mm-mmV[i+1]>=0.1));if(!isPeak)continue;const barH=(mm/maxMm)*PH;o.s+=`<text x="${bcx(i)}" y="${Math.max(T+8,T+PH-barH-4)}" text-anchor="middle" fill="${C.barTx}" font-size="8.5" font-family="IBM Plex Mono,monospace" font-weight="500">${mm.toFixed(1)}</text>`;}
+  const tPts=data.map((d,i)=>({x:bcx(i),y:tY(d.temp)})), linePath=cardinalPath(tPts);
+  if(linePath){o.s+=`<path d="${linePath} L${tPts[N-1].x},${T+PH} L${tPts[0].x},${T+PH} Z" fill="url(#tg)" clip-path="url(#cp)"/><path d="${linePath}" fill="none" stroke="${C.temp}" stroke-width="1.8" stroke-linejoin="round" clip-path="url(#cp)"/>`;}
+  const tUsed=new Set();[temps.indexOf(tMax),temps.indexOf(tMin)].forEach(i=>{if(i>=0)tUsed.add(i);});
+  for(let i=1;i<N-1;i++){const isMax=temps[i]>temps[i-1]&&temps[i]>temps[i+1]&&(temps[i]-Math.max(temps[i-1],temps[i+1]))>=0.8;const isMin=temps[i]<temps[i-1]&&temps[i]<temps[i+1]&&(Math.min(temps[i-1],temps[i+1])-temps[i])>=0.8;if(isMax||isMin)tUsed.add(i);}
+  const filtered=[];[...tUsed].sort((a,b)=>a-b).forEach(i=>{const last=filtered[filtered.length-1];if(last===undefined||i-last>=4)filtered.push(i);});
+  filtered.forEach(i=>{const cx=tPts[i].x,cy=tPts[i].y,above=i>0&&temps[i]>temps[i-1],ccy=Math.max(T+10,Math.min(T+PH-4,cy));o.s+=`<circle cx="${cx}" cy="${ccy}" r="2.8" fill="${C.temp}" stroke="${C.cStroke}" stroke-width="1"/><text x="${cx}" y="${Math.max(T+9,Math.min(T+PH+2,ccy+(above?-9:13)))}" text-anchor="middle" dominant-baseline="middle" fill="${C.temp}" font-size="9" font-family="IBM Plex Mono,monospace" font-weight="500">${temps[i].toFixed(1)}°</text>`;});
+  nowLine(o,L,T,PW,PH,bw);
+  o.s+=`<line x1="${L}" y1="${T}" x2="${L}" y2="${T+PH}" stroke="${C.axis}"/>`;
+  [0,maxMm/2,maxMm].forEach(v=>{o.s+=`<line x1="${L-3}" y1="${pY(v)}" x2="${L}" y2="${pY(v)}" stroke="${C.tick}"/><text x="${L-6}" y="${pY(v)}" text-anchor="end" dominant-baseline="middle" fill="${C.num}" font-size="8.5" font-family="IBM Plex Mono,monospace">${niceVal(v)}</text>`;});
+  const lyc=T+PH/2;o.s+=`<text x="10" y="${lyc}" text-anchor="middle" dominant-baseline="middle" fill="${C.title}" font-size="8.5" font-family="IBM Plex Mono,monospace" letter-spacing="1.5" transform="rotate(-90,10,${lyc})">MM/H</text>`;
+  o.s+=`<line x1="${L+PW}" y1="${T}" x2="${L+PW}" y2="${T+PH}" stroke="rgba(224,159,90,0.25)"/>`;
+  for(let i=0;i<=4;i++){const tv=tLo+(tHi-tLo)*i/4,y=tY(tv);o.s+=`<line x1="${L+PW}" y1="${y}" x2="${L+PW+3}" y2="${y}" stroke="rgba(224,159,90,0.35)"/><text x="${L+PW+6}" y="${y}" text-anchor="start" dominant-baseline="middle" fill="${C.num2}" font-size="8.5" font-family="IBM Plex Mono,monospace">${tv.toFixed(0)}°</text>`;}
+  o.s+=`<text x="${SVG_W-8}" y="${T+PH/2}" text-anchor="middle" dominant-baseline="middle" fill="${C.temp}" font-size="8.5" font-family="IBM Plex Mono,monospace" letter-spacing="1.5" transform="rotate(90,${SVG_W-8},${T+PH/2})">°C</text>`;
+  /* 48h režim: pevně každá 3. hodina (text i ikona). 24h režim: podle šířky sloupce. */
+  const xStep=N>24?3:Math.max(1,Math.ceil(12/bw)), iStep=N>24?3:xStep*(bw*xStep>=16?1:2);
+  data.forEach((d,i)=>{if(i%xStep!==0)return;o.s+=`<text x="${bcx(i)}" y="${T+PH+13}" text-anchor="middle" fill="${C.num}" font-size="8.5" font-family="IBM Plex Mono,monospace">${d.hour.slice(0,2)}</text>`+(i%iStep===0?wIcon(d.code,d.day,bcx(i),T+PH+27,15):"");});
+  svgEl.innerHTML=o.s;
+  attachBars(svgEl,data,d=>`${d.dayLabel} ${d.hour} · ${d.mm.toFixed(1)} mm · ${label(d.mm)} · ${d.prob}% · ${d.temp.toFixed(1)}°C · vítr ${d.wind.toFixed(1)} m/s (náraz ${d.gust.toFixed(1)})`);
+}
+
+/* srážky denní */
+function renderDaily(data){
+  const C=CP();
+  const total=data.reduce((s,d)=>s+d.mm,0), wettest=data.reduce((a,d)=>d.mm>a.mm?d:a,data[0]);
+  const tMin=Math.min(...data.map(d=>d.tMin)), tMax=Math.max(...data.map(d=>d.tMax)), maxGust=Math.max(...data.map(d=>d.gust)), firstRain=data.find(d=>d.mm>=0.5);
+  setCard(1,`úhrn ${data.length} dní`,"#46c8e8",total.toFixed(1)+" mm");setCard(2,"nejdeštivější","#5b8df0",wettest.mm.toFixed(1)+" mm",wettest.dayLabel+" "+wettest.dateLabel);setCard(3,"teplota období","#7d97c0",`${tMin.toFixed(0)}° – ${tMax.toFixed(0)}°C`);setCard(4,"max náraz větru","#5b8df0",maxGust.toFixed(1)+" m/s");
+  $("status").innerHTML=firstRain?`Nejbližší srážky <b>&nbsp;${firstRain.dayLabel} ${firstRain.dateLabel}&nbsp;</b> (${firstRain.mm.toFixed(1)} mm, ${firstRain.prob} %).`:`Příštích ${data.length} dní se výrazné srážky nečekají. ☀️`;
+  $("cap").textContent="srážky mm/den · teplota °C — po dnech"+(data.length>10?" · po 10. dni orientační":"");
+  setLegend([{c:'#00c8dc',t:'<2 mm'},{c:'#38d46a',t:'<5 mm'},{c:'#f5d020',t:'<10 mm'},{c:'#f07820',t:'<20 mm'},{c:'#e02828',t:'≥20 mm'},{c:'#e6a15a',t:'tmax',line:true},{c:'#5b8df0',t:'tmin',line:true}]);
+  const {svgEl,SVG_W,L,T,PW,PH}=dims(50);
+  const N=data.length, bw=PW/N, bcx=i=>L+i*bw+bw/2, barW=Math.min(bw*0.5,46), bLeft=i=>bcx(i)-barW/2;
+  const maxMm=niceTop(Math.max(0,...data.map(d=>d.mm)),10), pY=mm=>T+PH-(mm/maxMm)*PH;
+  const tPad=(tMax-tMin)*0.18||2, tLo=tMin-tPad, tHi=tMax+tPad, tY=t=>T+PH-((t-tLo)/(tHi-tLo))*PH;
+  let svg=`<defs>${iconDefs()}<linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6a15a" stop-opacity="0.18"/><stop offset="1" stop-color="#5b8df0" stop-opacity="0.06"/></linearGradient></defs>`;
+  [maxMm*0.25,maxMm*0.5,maxMm*0.75,maxMm].forEach(gm=>{svg+=`<line x1="${L}" y1="${pY(gm)}" x2="${L+PW}" y2="${pY(gm)}" stroke="${C.grid}" stroke-dasharray="3 4"/>`;});
+  data.forEach((d,i)=>{const barH=Math.max(1,(d.mm/maxMm)*PH);svg+=`<rect class="bar" x="${bLeft(i)}" y="${T+PH-barH}" width="${barW}" height="${barH}" rx="3" fill="${colorDay(d.mm)}" data-i="${i}"/>`;if(d.mm>=0.3)svg+=`<text x="${bcx(i)}" y="${Math.max(T+8,T+PH-barH-4)}" text-anchor="middle" fill="${C.barTx}" font-size="9" font-family="IBM Plex Mono,monospace" font-weight="500">${d.mm.toFixed(1)}</text>`;});
+  const maxPts=data.map((d,i)=>({x:bcx(i),y:tY(d.tMax)})), minPts=data.map((d,i)=>({x:bcx(i),y:tY(d.tMin)}));
+  let area=`M${maxPts[0].x},${maxPts[0].y}`;maxPts.forEach(p=>area+=` L${p.x},${p.y}`);for(let i=minPts.length-1;i>=0;i--)area+=` L${minPts[i].x},${minPts[i].y}`;area+=' Z';
+  svg+=`<path d="${area}" fill="url(#tg)"/><polyline points="${maxPts.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="#e6a15a" stroke-width="1.8" stroke-linejoin="round"/><polyline points="${minPts.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="#5b8df0" stroke-width="1.8" stroke-linejoin="round"/>`;
+  data.forEach((d,i)=>{svg+=`<circle cx="${maxPts[i].x}" cy="${maxPts[i].y}" r="2.6" fill="#e6a15a" stroke="${C.cStroke}" stroke-width="1"/><text x="${maxPts[i].x}" y="${Math.max(T+8,maxPts[i].y-7)}" text-anchor="middle" fill="#e6a15a" font-size="9.5" font-family="IBM Plex Mono,monospace" font-weight="500">${d.tMax.toFixed(0)}°</text><circle cx="${minPts[i].x}" cy="${minPts[i].y}" r="2.6" fill="#5b8df0" stroke="${C.cStroke}" stroke-width="1"/><text x="${minPts[i].x}" y="${Math.min(T+PH-2,minPts[i].y+14)}" text-anchor="middle" fill="#5b8df0" font-size="9.5" font-family="IBM Plex Mono,monospace" font-weight="500">${d.tMin.toFixed(0)}°</text>`;});
+  svg+=`<line x1="${L}" y1="${T}" x2="${L}" y2="${T+PH}" stroke="${C.axis}"/>`;
+  [0,maxMm/2,maxMm].forEach(v=>{svg+=`<line x1="${L-3}" y1="${pY(v)}" x2="${L}" y2="${pY(v)}" stroke="${C.tick}"/><text x="${L-6}" y="${pY(v)}" text-anchor="end" dominant-baseline="middle" fill="${C.num}" font-size="8.5" font-family="IBM Plex Mono,monospace">${niceVal(v)}</text>`;});
+  const lyc=T+PH/2;svg+=`<text x="10" y="${lyc}" text-anchor="middle" dominant-baseline="middle" fill="${C.title}" font-size="8.5" font-family="IBM Plex Mono,monospace" letter-spacing="1.5" transform="rotate(-90,10,${lyc})">MM/DEN</text>`;
+  svg+=`<line x1="${L+PW}" y1="${T}" x2="${L+PW}" y2="${T+PH}" stroke="rgba(224,159,90,0.25)"/>`;
+  for(let i=0;i<=4;i++){const tv=tLo+(tHi-tLo)*i/4,y=tY(tv);svg+=`<line x1="${L+PW}" y1="${y}" x2="${L+PW+3}" y2="${y}" stroke="rgba(224,159,90,0.35)"/><text x="${L+PW+6}" y="${y}" text-anchor="start" dominant-baseline="middle" fill="${C.num2}" font-size="8.5" font-family="IBM Plex Mono,monospace">${tv.toFixed(0)}°</text>`;}
+  svg+=`<text x="${SVG_W-8}" y="${T+PH/2}" text-anchor="middle" dominant-baseline="middle" fill="${C.temp}" font-size="8.5" font-family="IBM Plex Mono,monospace" letter-spacing="1.5" transform="rotate(90,${SVG_W-8},${T+PH/2})">°C</text>`;
+  const dStep=bw>=26?1:bw>=15?2:3;
+  data.forEach((d,i)=>{if(i%dStep!==0)return;svg+=`<text x="${bcx(i)}" y="${T+PH+14}" text-anchor="middle" fill="${C.dayTx}" font-size="10" font-family="IBM Plex Mono,monospace">${d.dayLabel}</text><text x="${bcx(i)}" y="${T+PH+25}" text-anchor="middle" fill="${C.dateTx}" font-size="8" font-family="IBM Plex Mono,monospace">${d.dateLabel}</text>`+wIcon(d.code,true,bcx(i),T+PH+39,18);});
+  svgEl.innerHTML=svg;
+  attachBars(svgEl,data,d=>`${d.dayLabel} ${d.dateLabel} · ${d.mm.toFixed(1)} mm · ${labelDay(d.mm)} · ${d.prob}% · ${d.tMin.toFixed(0)}°–${d.tMax.toFixed(0)}° · vítr ${d.wind.toFixed(1)} m/s (náraz ${d.gust.toFixed(1)})`);
+}
+
+/* vítr hodinové */
+function renderHourlyWind(data){
+  const C=CP();
+  const maxWind=Math.max(...data.map(d=>d.wind)), maxGust=Math.max(...data.map(d=>d.gust)), avgWind=data.reduce((s,d)=>s+d.wind,0)/data.length;
+  const gi=data.reduce((bi,d,i,a)=>d.gust>a[bi].gust?i:bi,0), g=data[gi];
+  setCard(1,"max vítr","#46c8e8",maxWind.toFixed(1)+" m/s");setCard(2,"max náraz","#5b8df0",maxGust.toFixed(1)+" m/s");setCard(3,"prům. vítr","#7d97c0",avgWind.toFixed(1)+" m/s");setCard(4,"převažující směr","#7d97c0",domDir(data.map(d=>({deg:d.dir,w:d.wind}))));
+  $("status").innerHTML=`Nejsilnější náraz <b>&nbsp;${g.dayLabel} v ${g.hour}&nbsp;</b> (${g.gust.toFixed(1)} m/s, ${windLabel(g.gust)}).`;
+  $("cap").textContent="rychlost větru m/s · nárazy — po hodinách";
+  setLegend(WIND_LEGEND);
+  const {svgEl,L,T,PW,PH}=dims(40);
+  const N=data.length, bw=PW/N, bcx=i=>L+i*bw+bw/2, bLeft=i=>L+i*bw+1, bWidth=Math.max(1,bw-2);
+  const maxV=Math.max(25,maxGust), Y=v=>T+PH-(v/maxV)*PH;
+  const o={s:`<defs>${iconDefs()}<linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.gust}" stop-opacity="0.16"/><stop offset="1" stop-color="${C.gust}" stop-opacity="0.01"/></linearGradient><clipPath id="cpw"><rect x="${L}" y="${T}" width="${PW}" height="${PH}"/></clipPath></defs>`};
+  [maxV*0.25,maxV*0.5,maxV*0.75,maxV].forEach(gm=>{o.s+=`<line x1="${L}" y1="${Y(gm)}" x2="${L+PW}" y2="${Y(gm)}" stroke="${C.grid}" stroke-dasharray="3 4"/>`;});
+  const ti=data.findIndex(d=>d.dayLabel==='zítra');
+  if(ti>0){const sx=L+ti*bw;o.s+=`<line x1="${sx}" y1="${T}" x2="${sx}" y2="${T+PH+4}" stroke="${C.sep}" stroke-dasharray="4 3"/><text x="${sx+4}" y="${T+10}" fill="${C.sepTx}" font-size="9" font-family="IBM Plex Mono,monospace">zítra</text>`;}
+  data.forEach((d,i)=>{const barH=Math.max(1,(d.wind/maxV)*PH);o.s+=`<rect class="bar" x="${bLeft(i)}" y="${T+PH-barH}" width="${bWidth}" height="${barH}" rx="2" fill="${windColor(d.wind)}" data-i="${i}"/>`;});
+  const gPts=data.map((d,i)=>({x:bcx(i),y:Y(d.gust)})), gPath=cardinalPath(gPts);
+  if(gPath){o.s+=`<path d="${gPath} L${gPts[N-1].x},${T+PH} L${gPts[0].x},${T+PH} Z" fill="url(#wg)" clip-path="url(#cpw)"/><path d="${gPath}" fill="none" stroke="${C.gust}" stroke-width="1.6" stroke-dasharray="5 3" stroke-linejoin="round" clip-path="url(#cpw)"/>`;}
+  o.s+=`<circle cx="${gPts[gi].x}" cy="${gPts[gi].y}" r="2.8" fill="${C.gust}" stroke="${C.cStroke}" stroke-width="1"/><text x="${gPts[gi].x}" y="${Math.max(T+8,gPts[gi].y-6)}" text-anchor="middle" fill="${C.gust}" font-size="9" font-family="IBM Plex Mono,monospace" font-weight="500">${g.gust.toFixed(1)}</text>`;
+  nowLine(o,L,T,PW,PH,bw);
+  o.s+=`<line x1="${L}" y1="${T}" x2="${L}" y2="${T+PH}" stroke="${C.axis}"/>`;
+  [0,maxV/2,maxV].forEach(v=>{o.s+=`<line x1="${L-3}" y1="${Y(v)}" x2="${L}" y2="${Y(v)}" stroke="${C.tick}"/><text x="${L-6}" y="${Y(v)}" text-anchor="end" dominant-baseline="middle" fill="${C.num}" font-size="8.5" font-family="IBM Plex Mono,monospace">${niceVal(v)}</text>`;});
+  const lyc=T+PH/2;o.s+=`<text x="10" y="${lyc}" text-anchor="middle" dominant-baseline="middle" fill="${C.title}" font-size="8.5" font-family="IBM Plex Mono,monospace" letter-spacing="1.5" transform="rotate(-90,10,${lyc})">M/S</text>`;
+  /* 48h režim: pevně každá 3. hodina (text i ikona). 24h režim: podle šířky sloupce. */
+  const xStep=N>24?3:Math.max(1,Math.ceil(12/bw)), iStep=N>24?3:xStep*(bw*xStep>=16?1:2);
+  data.forEach((d,i)=>{if(i%xStep!==0)return;o.s+=`<text x="${bcx(i)}" y="${T+PH+13}" text-anchor="middle" fill="${C.num}" font-size="8.5" font-family="IBM Plex Mono,monospace">${d.hour.slice(0,2)}</text>`+(i%iStep===0?dirArrow(d.dir,bcx(i),T+PH+27,14,windColor(d.wind)):"");});
+  svgEl.innerHTML=o.s;
+  attachBars(svgEl,data,d=>`${d.dayLabel} ${d.hour} · vítr ${d.wind.toFixed(1)} m/s · ${windLabel(d.wind)} · náraz ${d.gust.toFixed(1)} · směr ${dirName(d.dir)} · ${d.temp.toFixed(1)}°C`);
+}
+
+/* vítr denní */
+function renderDailyWind(data){
+  const C=CP();
+  const maxWind=Math.max(...data.map(d=>d.wind)), maxGust=Math.max(...data.map(d=>d.gust)), windiest=data.reduce((a,d)=>d.gust>a.gust?d:a,data[0]);
+  setCard(1,"max vítr","#46c8e8",maxWind.toFixed(1)+" m/s");setCard(2,"max náraz","#5b8df0",maxGust.toFixed(1)+" m/s");setCard(3,"největrnější","#7d97c0",windiest.gust.toFixed(1)+" m/s",windiest.dayLabel+" "+windiest.dateLabel);setCard(4,"převažující směr","#7d97c0",domDir(data.map(d=>({deg:d.dir,w:d.wind}))));
+  $("status").innerHTML=`Nejsilnější nárazy <b>&nbsp;${windiest.dayLabel} ${windiest.dateLabel}&nbsp;</b> (${windiest.gust.toFixed(1)} m/s, ${windLabel(windiest.gust)}).`;
+  $("cap").textContent="rychlost větru m/s · nárazy — po dnech";
+  setLegend(WIND_LEGEND);
+  const {svgEl,L,T,PW,PH}=dims(50);
+  const N=data.length, bw=PW/N, bcx=i=>L+i*bw+bw/2, barW=Math.min(bw*0.5,46), bLeft=i=>bcx(i)-barW/2;
+  const maxV=Math.max(25,maxGust), Y=v=>T+PH-(v/maxV)*PH;
+  let svg=`<defs>${iconDefs()}<linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.gust}" stop-opacity="0.18"/><stop offset="1" stop-color="${C.gust}" stop-opacity="0.02"/></linearGradient></defs>`;
+  [maxV*0.25,maxV*0.5,maxV*0.75,maxV].forEach(gm=>{svg+=`<line x1="${L}" y1="${Y(gm)}" x2="${L+PW}" y2="${Y(gm)}" stroke="${C.grid}" stroke-dasharray="3 4"/>`;});
+  data.forEach((d,i)=>{const barH=Math.max(1,(d.wind/maxV)*PH);svg+=`<rect class="bar" x="${bLeft(i)}" y="${T+PH-barH}" width="${barW}" height="${barH}" rx="3" fill="${windColor(d.wind)}" data-i="${i}"/><text x="${bcx(i)}" y="${Math.max(T+8,T+PH-barH-4)}" text-anchor="middle" fill="${C.barTx}" font-size="9" font-family="IBM Plex Mono,monospace" font-weight="500">${d.wind.toFixed(1)}</text>`;});
+  const gPts=data.map((d,i)=>({x:bcx(i),y:Y(d.gust)}));
+  let area=`M${gPts[0].x},${T+PH}`;gPts.forEach(p=>area+=` L${p.x},${p.y}`);area+=` L${gPts[N-1].x},${T+PH} Z`;
+  svg+=`<path d="${area}" fill="url(#wg)"/><polyline points="${gPts.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="${C.gust}" stroke-width="1.8" stroke-dasharray="5 3" stroke-linejoin="round"/>`;
+  data.forEach((d,i)=>{svg+=`<circle cx="${gPts[i].x}" cy="${gPts[i].y}" r="2.6" fill="${C.gust}" stroke="${C.cStroke}" stroke-width="1"/><text x="${gPts[i].x}" y="${Math.max(T+8,gPts[i].y-7)}" text-anchor="middle" fill="${C.gust}" font-size="9" font-family="IBM Plex Mono,monospace" font-weight="500">${d.gust.toFixed(1)}</text>`;});
+  svg+=`<line x1="${L}" y1="${T}" x2="${L}" y2="${T+PH}" stroke="${C.axis}"/>`;
+  [0,maxV/2,maxV].forEach(v=>{svg+=`<line x1="${L-3}" y1="${Y(v)}" x2="${L}" y2="${Y(v)}" stroke="${C.tick}"/><text x="${L-6}" y="${Y(v)}" text-anchor="end" dominant-baseline="middle" fill="${C.num}" font-size="8.5" font-family="IBM Plex Mono,monospace">${niceVal(v)}</text>`;});
+  const lyc=T+PH/2;svg+=`<text x="10" y="${lyc}" text-anchor="middle" dominant-baseline="middle" fill="${C.title}" font-size="8.5" font-family="IBM Plex Mono,monospace" letter-spacing="1.5" transform="rotate(-90,10,${lyc})">M/S</text>`;
+  const dStep=bw>=26?1:bw>=15?2:3;
+  data.forEach((d,i)=>{if(i%dStep!==0)return;svg+=`<text x="${bcx(i)}" y="${T+PH+14}" text-anchor="middle" fill="${C.dayTx}" font-size="10" font-family="IBM Plex Mono,monospace">${d.dayLabel}</text><text x="${bcx(i)}" y="${T+PH+25}" text-anchor="middle" fill="${C.dateTx}" font-size="8" font-family="IBM Plex Mono,monospace">${d.dateLabel}</text>`+dirArrow(d.dir,bcx(i),T+PH+40,18,windColor(d.wind));});
+  svgEl.innerHTML=svg;
+  attachBars(svgEl,data,d=>`${d.dayLabel} ${d.dateLabel} · vítr ${d.wind.toFixed(1)} m/s · ${windLabel(d.wind)} · náraz ${d.gust.toFixed(1)} · směr ${dirName(d.dir)}`);
+}
+
+function renderCurrent(){
+  $("readout").textContent="Klepni nebo najeď na sloupec pro detail.";
+  const hrs=mode==='24h'?24:48;
+  if(metric==='wind'){if(mode==='7d'){if(dailyData)renderDailyWind(dailyData);}else{if(hourlyData)renderHourlyWind(hourlyData.slice(0,hrs));}}
+  else{if(mode==='7d'){if(dailyData)renderDaily(dailyData);}else{if(hourlyData)renderHourly(hourlyData.slice(0,hrs));}}
+  const c=$("chart");c.style.animation='none';void c.offsetWidth;c.style.animation='chartin .45s cubic-bezier(.2,.7,.3,1)';
+}
+
+/* Windy meteomapa */
+let mapOverlay=loadPref('srk.mapov','radar');
+const MAP_PRODUCT={radar:'radar',rain:'ecmwf',wind:'ecmwf',temp:'ecmwf'};
+const CR_CENTER={lat:49.8,lon:15.47};
+function inCR(lat,lon){return lat>=48.5&&lat<=51.1&&lon>=12.0&&lon<=18.9;}
+function buildMapSrc(){
+  const c=coords||FALLBACK,dLat=(+c.lat).toFixed(3),dLon=(+c.lon).toFixed(3);
+  const ov=mapOverlay,product=MAP_PRODUCT[ov]||'ecmwf';
+  let cLat=dLat,cLon=dLon,zoom=(ov==='radar')?8:7;
+  if(inCR(+c.lat,+c.lon)){cLat=CR_CENTER.lat;cLon=CR_CENTER.lon;zoom=6;}
+  return `https://embed.windy.com/embed2.html?lat=${cLat}&lon=${cLon}&detailLat=${dLat}&detailLon=${dLon}&zoom=${zoom}&level=surface&overlay=${ov}&product=${product}&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1`;
+}
+function updateMap(){const f=$("windyFrame");if(!f)return;const src=buildMapSrc();if(f.getAttribute('src')!==src)f.setAttribute('src',src);}
+$("segMap").querySelectorAll('button').forEach(b=>{b.addEventListener('click',()=>{mapOverlay=b.dataset.ov;$("segMap").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));savePref('srk.mapov',mapOverlay);updateMap();});});
+
+function parseLocal(s){const m=s.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);if(!m)return new Date(s);return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]);}
+function fmtHour(d){return String(d.getHours()).padStart(2,'0')+":"+String(d.getMinutes()).padStart(2,'0');}
+function fmtDate(d){return d.getDate()+". "+(d.getMonth()+1)+".";}
+const WD=['ne','po','út','st','čt','pá','so'];
+/* "teď" v místě předpovědi vyjádřené jako lokální Date (čteme přes UTC gettery, aby se offset nezapočítal dvakrát) */
+function nowAtLoc(offMs){const u=new Date(Date.now()+offMs);return new Date(u.getUTCFullYear(),u.getUTCMonth(),u.getUTCDate(),u.getUTCHours(),u.getUTCMinutes(),u.getUTCSeconds());}
+function nextDayStr(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).toDateString();}
+function buildHourly(j){const H=j.hourly,times=H.time;tzOffsetMs=(j.utc_offset_seconds??0)*1000;const nowLoc=nowAtLoc(tzOffsetMs),today=nowLoc.toDateString(),tomorrowLoc=nextDayStr(nowLoc);let start=times.findIndex(t=>parseLocal(t)>=new Date(nowLoc.getTime()-3600000));if(start<0)start=0;const data=[];for(let i=start;i<start+48&&i<times.length;i++){const dt=parseLocal(times[i]);const dayLabel=dt.toDateString()===today?"dnes":dt.toDateString()===tomorrowLoc?"zítra":WD[dt.getDay()];data.push({hour:fmtHour(dt),h:dt.getHours(),dayLabel,mm:Math.max(0,H.precipitation[i]??0),prob:H.precipitation_probability[i]??0,temp:H.temperature_2m[i]??0,feels:H.apparent_temperature?.[i]??H.temperature_2m[i]??0,hum:H.relativehumidity_2m?.[i]??null,uv:H.uv_index?.[i]??null,wind:(H.windspeed_10m?.[i]??0)*KMH2MS,gust:(H.windgusts_10m?.[i]??0)*KMH2MS,dir:H.winddirection_10m?.[i]??0,code:H.weathercode?.[i]??0,day:(H.is_day?.[i]??1)===1});}hourlyData=data;}
+/* úhrn srážek za uplynulých 24 h (hodinová hodnota = úhrn za předchozí hodinu) */
+function buildPast24(j){
+  const H=j.hourly;if(!H||!H.time){past24mm=null;return;}
+  const nowLoc=nowAtLoc((j.utc_offset_seconds??0)*1000),from=new Date(nowLoc.getTime()-86400000);
+  let sum=0,n=0;
+  for(let i=0;i<H.time.length;i++){const dt=parseLocal(H.time[i]);if(dt>from&&dt<=nowLoc){sum+=Math.max(0,H.precipitation[i]??0);n++;}}
+  past24mm=n?sum:null;
+}
+function buildDaily(j){const D=j.daily,nowLoc=nowAtLoc((j.utc_offset_seconds??0)*1000),today=nowLoc.toDateString(),tomorrowLoc=nextDayStr(nowLoc);const data=[];const todayMid=new Date(nowLoc.getFullYear(),nowLoc.getMonth(),nowLoc.getDate());for(let i=0;i<D.time.length;i++){const dt=parseLocal(D.time[i]+"T12:00");if(dt<todayMid)continue;const dayLabel=dt.toDateString()===today?"dnes":dt.toDateString()===tomorrowLoc?"zítra":WD[dt.getDay()];data.push({date:dt,dayLabel,dateLabel:fmtDate(dt),mm:Math.max(0,D.precipitation_sum[i]??0),prob:D.precipitation_probability_max?.[i]??0,tMax:D.temperature_2m_max[i]??0,tMin:D.temperature_2m_min[i]??0,wind:(D.windspeed_10m_max?.[i]??0)*KMH2MS,gust:(D.windgusts_10m_max?.[i]??0)*KMH2MS,dir:D.winddirection_10m_dominant?.[i]??0,code:D.weathercode?.[i]??0,sunrise:D.sunrise?.[i]?fmtHour(parseLocal(D.sunrise[i])):null,sunset:D.sunset?.[i]?fmtHour(parseLocal(D.sunset[i])):null});}dailyData=data;}
+function fillNow(){if(!hourlyData||!hourlyData[0])return;const c=hourlyData[0],td=dailyData&&dailyData[0];$("nowIcon").innerHTML=`<defs>${iconDefs()}</defs>`+wIcon(c.code,c.day,30,30,52);$("nowTemp").textContent=Math.round(c.temp)+"°C";$("nowDesc").textContent=wmoDesc(c.code)+" · vítr "+c.wind.toFixed(1)+" m/s";$("nowMeta").innerHTML=`pocitově <b>${Math.round(c.feels)}°</b>`+(td?` · dnes <b>${Math.round(td.tMin)}°</b> / <b>${Math.round(td.tMax)}°</b>`:'');let ex='';if(td&&td.sunrise)ex+=`<span>východ <b>${td.sunrise}</b></span>`;if(td&&td.sunset)ex+=`<span>západ <b>${td.sunset}</b></span>`;if(c.hum!=null)ex+=`<span>vlhkost <b>${Math.round(c.hum)} %</b></span>`;if(c.uv!=null)ex+=`<span>UV <b>${Math.round(c.uv)}</b></span>`;$("nowExtra").innerHTML=ex;$("nowExtra").style.display=ex?'flex':'none';buildAdvisories();applyWeatherBg(c.code,c.day);}
+
+/* dynamické pozadí dle počasí + den/noc — mění jen barevné „záře", základ kvůli čitelnosti zůstává */
+function weatherCat(code){
+  if(code>=95)return'storm';
+  if((code>=71&&code<=77)||code===85||code===86)return'snow';
+  if((code>=51&&code<=67)||(code>=80&&code<=82))return'rain';
+  if(code===45||code===48)return'fog';
+  if(code===2||code===3)return'cloud';
+  return'clear';
+}
+const ATM={
+  clear_day:['rgba(86,150,236,.26)','rgba(240,196,120,.13)','rgba(74,166,220,.12)'],
+  clear_night:['rgba(60,96,205,.20)','rgba(120,92,220,.12)','rgba(28,38,86,.34)'],
+  cloud_day:['rgba(120,142,178,.18)','rgba(96,116,156,.12)','rgba(72,92,132,.18)'],
+  cloud_night:['rgba(78,96,134,.18)','rgba(70,86,124,.12)','rgba(40,52,84,.30)'],
+  fog_day:['rgba(150,160,182,.18)','rgba(122,136,162,.14)','rgba(102,116,146,.16)'],
+  fog_night:['rgba(96,106,130,.18)','rgba(84,96,124,.12)','rgba(54,64,90,.28)'],
+  rain_day:['rgba(72,122,192,.22)','rgba(60,140,180,.14)','rgba(40,72,122,.24)'],
+  rain_night:['rgba(54,86,150,.20)','rgba(48,96,150,.12)','rgba(26,44,86,.32)'],
+  snow_day:['rgba(150,186,226,.24)','rgba(172,202,236,.14)','rgba(112,152,202,.18)'],
+  snow_night:['rgba(108,140,196,.18)','rgba(120,150,200,.12)','rgba(58,82,134,.30)'],
+  storm_day:['rgba(112,82,202,.24)','rgba(150,92,210,.14)','rgba(52,42,92,.32)'],
+  storm_night:['rgba(92,66,182,.22)','rgba(120,78,196,.14)','rgba(38,30,72,.36)']
+};
+function applyWeatherBg(code,isDay){
+  const p=ATM[weatherCat(code)+(isDay?'_day':'_night')]||ATM.clear_day, r=document.documentElement.style;
+  r.setProperty('--atm1',p[0]);r.setProperty('--atm2',p[1]);r.setProperty('--atm3',p[2]);
+}
+
+/* kontextové rady (deštník, UV, vítr, vedro, mráz, bouřka, mlha) */
+function advIcon(n){const p={
+  umbrella:'<path d="M12 3a8 8 0 0 1 8 8H4a8 8 0 0 1 8-8Z"/><path d="M12 11v7a2 2 0 0 0 4 0"/><path d="M12 3V2"/>',
+  uv:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/>',
+  wind:'<path d="M3 8h10a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h7a2.5 2.5 0 1 1-2.5 2.5"/>',
+  heat:'<path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/><path d="M12 9v6"/>',
+  frost:'<path d="M12 2v20M3.5 7l17 10M20.5 7l-17 10"/><path d="M9.5 4 12 6l2.5-2M9.5 20 12 18l2.5 2"/>',
+  fog:'<path d="M4 9h16M6 13h12M4 17h16"/>',
+  storm:'<path d="M19 11a4 4 0 0 0-1-7.8A6 6 0 0 0 6.6 6 4.5 4.5 0 0 0 6 14.8"/><path d="M13 11l-3 5h3l-1 4 4-6h-3l1-3Z"/>'
+  }[n]||'';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
+function buildAdvisories(){
+  const box=$("advisories");if(!box)return;
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  if(!hourlyData||!hourlyData.length){box.innerHTML='';box.style.display='none';return;}
+  const H=hourlyData, N=Math.min(H.length,18), win=H.slice(0,N), tips=[];
+  const gustMax=Math.max(0,...win.map(d=>d.gust)),
+    tMaxN=Math.max(...win.map(d=>d.temp)),
+    tMinN=Math.min(...win.map(d=>d.temp)),
+    uvMax=Math.max(0,...win.filter(d=>d.uv!=null).map(d=>d.uv)),
+    stormH=win.find(d=>[95,96,99].includes(d.code)),
+    fogH=win.find(d=>[45,48].includes(d.code));
+  /* déšť / deštník — hodinově přesné z 48h okna */
+  const RAIN=0.2, fi=H.findIndex(d=>d.mm>=RAIN);
+  if(fi===0){let dur=0;for(let i=0;i<H.length&&H[i].mm>=RAIN;i++)dur++;tips.push({prio:4,sev:'warn',icon:'umbrella',text:pick([
+    `Venku to padá a hned tak nepřestane — počítej zhruba s <b>~${dur} h</b>. Deštník dnes drž po ruce.`,
+    `Právě prší, ještě tak <b>~${dur} h</b> to potrvá. Suché ponožky budou poklad.`,
+    `Momentálně mokrá várka, vydrží asi <b>~${dur} h</b>. Bez deštníku ani na krok.`])});}
+  else if(fi>0&&fi<=12){let dur=0;for(let i=fi;i<H.length&&H[i].mm>=RAIN;i++)dur++;const probMax=Math.max(0,...H.slice(fi,fi+dur).map(d=>d.prob));if(probMax>=40){const durTxt=dur>=2?` a vydrží asi ~${dur} h`:'';tips.push({prio:3,sev:'warn',icon:'umbrella',text:pick([
+    `Sucho ještě <b>${fi} h</b>, pak začne kapat${durTxt}. Deštník připrav radši hned.`,
+    `Obloha chystá přeháňku zhruba za <b>${fi} h</b>${durTxt} — hoď deštník do tašky a buď o krok napřed.`,
+    `Za <b>${fi} h</b> dorazí srážky${durTxt}. S deštníkem tě nepřekvapí.`])});}}
+  /* bouřka */
+  if(stormH)tips.push({prio:6,sev:'high',icon:'storm',text:pick([
+    `Pozor — ${stormH.dayLabel} kolem ${stormH.hour} to může pořádně zahřmět. Mrkni na oblohu a raději pod střechu.`,
+    `Blíží se bouřka (${stormH.dayLabel} ~${stormH.hour}). Elektřina v oblacích nežertuje — zůstaň v suchu a bezpečí.`,
+    `${stormH.dayLabel[0].toUpperCase()+stormH.dayLabel.slice(1)} kolem ${stormH.hour} hrozí bouřky. Naplánuj si to tak, ať jsi v krytu.`])});
+  /* vítr */
+  if(gustMax>=20)tips.push({prio:5,sev:'high',icon:'wind',text:pick([
+    `Vichr v nárazech až <b>${gustMax.toFixed(0)} m/s</b> — schovej, co může uletět, a drž si čepici.`,
+    `Fičí jako na hřebenech, poryvy až <b>${gustMax.toFixed(0)} m/s</b>. Slunečníky a trampolíny radši ukliď.`])});
+  else if(gustMax>=14)tips.push({prio:2,sev:'warn',icon:'wind',text:pick([
+    `Bude profukovat, nárazy až <b>${gustMax.toFixed(0)} m/s</b> — lehčí bunda přijde vhod.`,
+    `Vítr přitvrdí, v poryvech až <b>${gustMax.toFixed(0)} m/s</b>. Účes dnes nemá moc šancí.`])});
+  /* UV */
+  if(uvMax>=8)tips.push({prio:3,sev:'warn',icon:'uv',text:pick([
+    `Slunce jede naplno, UV šplhá k <b>${Math.round(uvMax)}</b> — krém, brýle a v poledne stín. Kůže poděkuje.`,
+    `Velmi vysoký UV index <b>${Math.round(uvMax)}</b>. Faktor nešetři a polední slunce přečkej ve stínu.`])});
+  else if(uvMax>=6)tips.push({prio:2,sev:'warn',icon:'uv',text:pick([
+    `UV index dnes vystoupá k <b>${Math.round(uvMax)}</b>. Kolem poledne bodne krém a kšiltovka.`,
+    `Slunce má dnes sílu (UV <b>${Math.round(uvMax)}</b>) — přes poledne se chraň, ať to nesvítí zbytečně.`])});
+  /* vedro / mráz */
+  if(tMaxN>=30)tips.push({prio:3,sev:'warn',icon:'heat',text:pick([
+    `Tropy v plné parádě, rtuť až na <b>${Math.round(tMaxN)}°</b> — pij, hledej stín a v poledne se šetři.`,
+    `Bude pořádné horko, až <b>${Math.round(tMaxN)}°</b>. Vodu po ruce a klobouk na hlavu.`])});
+  if(tMinN<=0)tips.push({prio:3,sev:'warn',icon:'frost',text:pick([
+    `Mrzne, až <b>${Math.round(tMinN)}°</b> — pod nohama klouže, našlapuj opatrně a navleč vrstvy.`,
+    `Ledové chvíle kolem <b>${Math.round(tMinN)}°</b>. Škrabka na sklo a rukavice dnes bodnou.`])});
+  /* mlha */
+  if(fogH&&!stormH)tips.push({prio:1,sev:'warn',icon:'fog',text:pick([
+    `Kolem ${fogH.hour} se zabalí mlha — za volantem zpomal a rozsviť.`,
+    `Mléčný opar okolo ${fogH.hour}, viditelnost mizí. Na cestách opatrně.`])});
+
+  tips.sort((a,b)=>b.prio-a.prio);
+  const top=tips.slice(0,3);
+  if(!top.length){box.innerHTML='';box.style.display='none';return;}
+  box.innerHTML=top.map(t=>`<div class="advisory${t.sev==='high'?' high':''}">${advIcon(t.icon)}<span>${t.text}</span></div>`).join('');
+  box.style.display='flex';
+}
+
+async function resolveName(lat,lon){try{const r=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=cs`);const j=await r.json();const nm=j.city||j.locality||j.principalSubdivision||`${lat.toFixed(2)}, ${lon.toFixed(2)}`;$("place").textContent=nm;if(coords)coords.name=nm;saveLast();renderFavs();}catch{$("place").textContent=`${lat.toFixed(2)}, ${lon.toFixed(2)}`;}}
+async function fetchForecast(lat,lon){
+  $("refIcon").style.animation="spin .9s linear infinite";
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation,precipitation_probability,temperature_2m,apparent_temperature,relativehumidity_2m,uv_index,windspeed_10m,windgusts_10m,winddirection_10m,weathercode,is_day&daily=precipitation_sum,precipitation_probability_max,temperature_2m_max,temperature_2m_min,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,weathercode,sunrise,sunset&forecast_days=14&past_days=1&timezone=auto`;
+    const res=await fetch(url);if(!res.ok)throw new Error("HTTP "+res.status);
+    const j=await res.json();offline=false;lastFetchTs=Date.now();savePref('srk.cache',JSON.stringify({j,ts:lastFetchTs}));
+    buildHourly(j);buildDaily(j);buildPast24(j);fillNow();renderCurrent();updateAge();
+  }catch(e){
+    const cached=loadPref('srk.cache',null);
+    if(cached){try{const o=JSON.parse(cached);offline=true;lastFetchTs=o.ts;buildHourly(o.j);buildDaily(o.j);buildPast24(o.j);fillNow();renderCurrent();updateAge();}catch{$("status").innerHTML=`<span class="err">Nepodařilo se načíst data (${e.message}).</span>`;}}
+    else $("status").innerHTML=`<span class="err">Nepodařilo se načíst data (${e.message}). Klepni na obnovit.</span>`;
+  }finally{$("refIcon").style.animation="none";}
+}
+function fmtAge(ts){const s=Math.floor((Date.now()-ts)/1000);if(s<60)return'právě teď';const m=Math.floor(s/60);if(m<60)return`před ${m} min`;const h=Math.floor(m/60);return`před ${h} h`;}
+function updateAge(){if(!lastFetchTs)return;$("updated").textContent=(offline?"offline · ":"")+"aktualizováno "+fmtAge(lastFetchTs);}
+
+function saveLast(){if(coords)savePref('srk.last',JSON.stringify({lat:coords.lat,lon:coords.lon,name:coords.name||$("place").textContent}));}
+function loadFavs(){try{favs=JSON.parse(loadPref('srk.favs','[]'))||[];}catch{favs=[];}}
+function saveFavs(){savePref('srk.favs',JSON.stringify(favs));}
+function isFav(){return coords&&favs.some(f=>Math.abs(f.lat-coords.lat)<0.05&&Math.abs(f.lon-coords.lon)<0.05);}
+function renderFavs(){let html=`<button class="fav loc" id="favLoc" title="moje poloha">📍</button>`;favs.forEach((f,i)=>{const active=coords&&Math.abs(f.lat-coords.lat)<0.05&&Math.abs(f.lon-coords.lon)<0.05;html+=`<button class="fav${active?' active':''}" data-i="${i}">${f.name||'místo'}<span class="favx" data-x="${i}">×</span></button>`;});if(!isFav())html+=`<button class="fav add" id="favAdd" title="uložit místo">＋</button>`;$("favbar").innerHTML=html;}
+$("favbar").addEventListener('click',e=>{const x=e.target.closest('.favx');if(x){e.stopPropagation();favs.splice(+x.dataset.x,1);saveFavs();renderFavs();return;}const loc=e.target.closest('#favLoc');if(loc){locate(true);return;}const add=e.target.closest('#favAdd');if(add){if(coords){favs.push({lat:coords.lat,lon:coords.lon,name:coords.name||$("place").textContent});saveFavs();renderFavs();}return;}const f=e.target.closest('.fav[data-i]');if(f){const fav=favs[+f.dataset.i];coords={lat:fav.lat,lon:fav.lon,name:fav.name};$("place").textContent=fav.name;saveLast();renderFavs();start();}});
+
+let searchTimer;
+$("q").addEventListener('input',e=>{clearTimeout(searchTimer);const v=e.target.value.trim();if(v.length<2){$("sug").innerHTML='';return;}searchTimer=setTimeout(()=>geocode(v),300);});
+async function geocode(name){try{const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=6&language=cs&format=json`);const j=await r.json();showSug(j.results||[]);}catch{$("sug").innerHTML='';}}
+function showSug(list){const el=$("sug");if(!list.length){el.innerHTML='';return;}el.innerHTML=list.map(r=>{const sub=[r.admin1,r.country].filter(Boolean).join(', ');return `<div data-lat="${r.latitude}" data-lon="${r.longitude}" data-name="${(r.name||'').replace(/"/g,'&quot;')}">${r.name}<div class="muted">${sub}</div></div>`;}).join('');el.querySelectorAll('div[data-lat]').forEach(d=>{d.addEventListener('click',()=>{coords={lat:parseFloat(d.dataset.lat),lon:parseFloat(d.dataset.lon),name:d.dataset.name};$("place").textContent=d.dataset.name;$("q").value='';$("sug").innerHTML='';saveLast();renderFavs();start();});});}
+document.addEventListener('click',e=>{if(!e.target.closest('.searchwrap'))$("sug").innerHTML='';});
+
+$("seg").querySelectorAll('button').forEach(b=>{b.addEventListener('click',()=>{mode=b.dataset.mode;$("seg").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));$("rangeLbl").textContent=mode==='24h'?'24 h':mode==='48h'?'48 h':'14 dní';savePref('srk.mode',mode);renderCurrent();});});
+$("segMetric").querySelectorAll('button').forEach(b=>{b.addEventListener('click',()=>{metric=b.dataset.metric;$("segMetric").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));savePref('srk.metric',metric);renderCurrent();});});
+
+function themeIcon(t){return t==='light'?`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`:`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`;}
+function applyTheme(t){theme=t;document.documentElement.setAttribute('data-theme',t);document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#e9f1fb':'#070b14');$("themeIcon").innerHTML=themeIcon(t);savePref('srk.theme',t);}
+$("theme").addEventListener('click',()=>{applyTheme(theme==='light'?'dark':'light');if(hourlyData)renderCurrent();});
+
+function start(){fetchForecast(coords.lat,coords.lon);updateMap();clearInterval(timer);timer=setInterval(()=>fetchForecast(coords.lat,coords.lon),600000);}
+function locate(force){if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{coords={lat:p.coords.latitude,lon:p.coords.longitude,name:null};resolveName(coords.lat,coords.lon);start();},()=>{coords={lat:FALLBACK.lat,lon:FALLBACK.lon,name:FALLBACK.name};$("place").textContent=FALLBACK.name;saveLast();renderFavs();start();},{enableHighAccuracy:false,timeout:8000,maximumAge:600000});}else{coords={lat:FALLBACK.lat,lon:FALLBACK.lon,name:FALLBACK.name};$("place").textContent=FALLBACK.name;start();}}
+$("refresh").addEventListener("click",()=>coords&&fetchForecast(coords.lat,coords.lon));
+$("ver").textContent=`v${VERSION} · ${VERSION_DATE}`;
+function openLog(){$("logBody").innerHTML=CHANGELOG.map(e=>`<div class="logentry"><div class="lh"><span class="lv">v${e.v}</span><span class="ld">${e.d}</span></div><ul>${e.c.map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('');$("logModal").hidden=false;}
+function closeLog(){$("logModal").hidden=true;}
+$("ver").addEventListener('click',openLog);
+$("ver").addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openLog();}});
+$("logClose").addEventListener('click',closeLog);
+$("logModal").addEventListener('click',e=>{if(e.target===$("logModal"))closeLog();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$("logModal").hidden)closeLog();});
+window.addEventListener('resize',()=>renderCurrent());
+window.addEventListener('orientationchange',()=>setTimeout(renderCurrent,200));
+
+applyTheme(loadPref('srk.theme', window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'));
+mode=loadPref('srk.mode','48h');metric=loadPref('srk.metric','precip');
+$("seg").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.mode===mode));
+$("segMetric").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.metric===metric));
+$("segMap").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.ov===mapOverlay));
+$("rangeLbl").textContent=mode==='24h'?'24 h':mode==='48h'?'48 h':'14 dní';
+loadFavs();renderFavs();ageTimer=setInterval(updateAge,30000);
+(function(){const last=loadPref('srk.last',null);if(last){try{const o=JSON.parse(last);coords={lat:o.lat,lon:o.lon,name:o.name};$("place").textContent=o.name||'uložené místo';renderFavs();start();return;}catch{}}locate();})();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}
+</script>
+</body>
+</html>
