@@ -52,10 +52,23 @@ body{
   background-attachment:fixed;color:var(--text);font-family:'Public Sans',sans-serif;
   padding:calc(22px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(34px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));transition:color .3s, background .3s;
 }
-.wrap{max-width:720px;margin:0 auto;animation:fadein .55s cubic-bezier(.2,.7,.3,1)}
+.wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;animation:fadein .55s cubic-bezier(.2,.7,.3,1)}
 @keyframes fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes chartin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+/* plovoucí mraky na pozadí — stejný tvar jako ikonky počasí (3 kruhy + základna), pomalu driftují přes oblohu */
+.clouds{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.cloud{position:absolute;left:-100%;fill:url(#cloudGrad);filter:blur(1px);animation:cloud-drift linear infinite;will-change:transform;opacity:.32}
+[data-theme="light"] .cloud{opacity:.6;filter:blur(1px) drop-shadow(0 10px 18px rgba(40,70,120,.16))}
+.c1{width:260px;height:130px;top:4%;animation-duration:100s}
+.c2{width:170px;height:85px;top:23%;animation-duration:130s;animation-delay:-45s;opacity:.22}
+.c3{width:320px;height:160px;top:58%;animation-duration:150s;animation-delay:-95s;opacity:.26}
+.c4{width:150px;height:75px;top:40%;animation-duration:82s;animation-delay:-20s;opacity:.18}
+[data-theme="light"] .c2{opacity:.48}
+[data-theme="light"] .c3{opacity:.52}
+[data-theme="light"] .c4{opacity:.42}
+@keyframes cloud-drift{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 420px))}}
+@media (prefers-reduced-motion: reduce){.cloud{animation:none;display:none}}
 .head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .place{display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:13px;letter-spacing:.4px;font-weight:600}
 h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:31px;line-height:1.05;margin-top:6px;letter-spacing:-.6px;white-space:nowrap}
@@ -157,6 +170,16 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#a9bfdd"/></linearGradient>
+  <symbol id="cloudShape" viewBox="0 0 200 100"><circle cx="64" cy="58" r="34"/><circle cx="106" cy="38" r="44"/><circle cx="148" cy="60" r="30"/><rect x="46" y="52" width="106" height="40" rx="20"/></symbol>
+</defs></svg>
+<div class="clouds" aria-hidden="true">
+  <svg class="cloud c1" viewBox="0 0 200 100"><use href="#cloudShape"/></svg>
+  <svg class="cloud c2" viewBox="0 0 200 100"><use href="#cloudShape"/></svg>
+  <svg class="cloud c3" viewBox="0 0 200 100"><use href="#cloudShape"/></svg>
+  <svg class="cloud c4" viewBox="0 0 200 100"><use href="#cloudShape"/></svg>
+</div>
 <div class="wrap">
   <div class="head">
     <div>
@@ -248,9 +271,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.27", VERSION_DATE="3. 9. 2026";
+const VERSION="1.28", VERSION_DATE="3. 9. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.28",d:"3. 9. 2026",c:["Oživené pozadí appky — jemně driftující mraky (respektuje nastavení omezeného pohybu v systému)."]},
   {v:"1.27",d:"3. 9. 2026",c:["Přepínač srážky / vítr má nově tematické ikonky (kapka / vítr)."]},
   {v:"1.26",d:"23. 8. 2026",c:["V 48h předpovědi je popisek i ikona vždy po 3 hodinách, i na šířku a na desktopu."]},
   {v:"1.25",d:"23. 8. 2026",c:["Denní výhled zkrácen z 16 na 14 dní.","Hodinový graf zahustí popisky podle dostupné šířky – na šířku displeje i na desktopu ukáže každou hodinu."]},
