@@ -98,6 +98,8 @@ h1 span{background:linear-gradient(92deg,#46c8e8 10%,#3d8de0 90%);-webkit-backgr
 .favx:hover{opacity:1}
 .seg{display:inline-flex;border-radius:13px;padding:3px;background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .seg button{background:none;border:none;color:var(--muted);padding:7px 6px;border-radius:10px;cursor:pointer;font-size:12px;font-family:'IBM Plex Mono',monospace;white-space:nowrap;transition:color .15s, background .2s, box-shadow .2s}
+#segMetric button{display:inline-flex;align-items:center;gap:5px;padding:7px 10px}
+#segMetric button svg.ic{width:13px;height:13px;flex-shrink:0}
 .seg button.on{background:linear-gradient(135deg,#2f6fe0,#3da9c9);color:#fff;box-shadow:0 2px 12px rgba(61,169,201,.45), inset 0 1px 0 rgba(255,255,255,.18)}
 .segbar{display:inline-flex;align-items:center;gap:2px;flex-wrap:nowrap;width:max-content}
 .seggrp{display:inline-flex;gap:2px}
@@ -199,8 +201,8 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
       </span>
       <span class="seg-div"></span>
       <span id="segMetric" class="seggrp">
-        <button data-metric="precip" class="on">srážky</button>
-        <button data-metric="wind">vítr</button>
+        <button data-metric="precip" class="on"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2.5s6.5 7.6 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.1 12 2.5 12 2.5Z"/></svg>srážky</button>
+        <button data-metric="wind"><svg class="ic" viewBox="0 0 24 24"><path d="M3 8h10a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h7a2.5 2.5 0 1 1-2.5 2.5"/></svg>vítr</button>
       </span>
     </div>
   </div>
@@ -246,9 +248,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.26", VERSION_DATE="23. 8. 2026";
+const VERSION="1.27", VERSION_DATE="3. 9. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.27",d:"3. 9. 2026",c:["Přepínač srážky / vítr má nově tematické ikonky (kapka / vítr)."]},
   {v:"1.26",d:"23. 8. 2026",c:["V 48h předpovědi je popisek i ikona vždy po 3 hodinách, i na šířku a na desktopu."]},
   {v:"1.25",d:"23. 8. 2026",c:["Denní výhled zkrácen z 16 na 14 dní.","Hodinový graf zahustí popisky podle dostupné šířky – na šířku displeje i na desktopu ukáže každou hodinu."]},
   {v:"1.24",d:"23. 8. 2026",c:["Zrušen zámek orientace – nainstalovaná aplikace se nově otočí i na šířku."]},
