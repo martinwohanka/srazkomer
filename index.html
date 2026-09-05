@@ -263,6 +263,7 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
       <span class="seg"><span id="segMap" class="seggrp">
         <button data-ov="radar" class="on">radar</button>
         <button data-ov="rain">srážky</button>
+        <button data-ov="clouds">mraky</button>
         <button data-ov="wind">vítr</button>
         <button data-ov="temp">teplota</button>
       </span></span>
@@ -284,9 +285,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.30", VERSION_DATE="3. 9. 2026";
+const VERSION="1.31", VERSION_DATE="3. 9. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.31",d:"3. 9. 2026",c:["Meteomapa Windy má novou vrstvu „mraky“ (oblačnost)."]},
   {v:"1.30",d:"3. 9. 2026",c:["Za jasného počasí je obloha na pozadí úplně čistá – mraky se plynule rozplynou."]},
   {v:"1.29",d:"3. 9. 2026",c:["Mraky na pozadí přepracované do tří hloubkových vrstev s parallaxem a vlastním pohupováním.","Obloha nově reaguje na počasí – za jasna plují jen dva tři obláčky, při dešti a bouřce se zatáhne a mraky ztmavnou."]},
   {v:"1.28",d:"3. 9. 2026",c:["Oživené pozadí appky — jemně driftující mraky (respektuje nastavení omezeného pohybu v systému)."]},
@@ -535,7 +537,7 @@ function renderCurrent(){
 
 /* Windy meteomapa */
 let mapOverlay=loadPref('srk.mapov','radar');
-const MAP_PRODUCT={radar:'radar',rain:'ecmwf',wind:'ecmwf',temp:'ecmwf'};
+const MAP_PRODUCT={radar:'radar',rain:'ecmwf',clouds:'ecmwf',wind:'ecmwf',temp:'ecmwf'};
 const CR_CENTER={lat:49.8,lon:15.47};
 function inCR(lat,lon){return lat>=48.5&&lat<=51.1&&lon>=12.0&&lon<=18.9;}
 function buildMapSrc(){
