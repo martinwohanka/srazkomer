@@ -147,7 +147,8 @@ h1 span{background:linear-gradient(92deg,#46c8e8 10%,#3d8de0 90%);-webkit-backgr
 .dot{width:9px;height:9px;border-radius:3px;display:inline-block}
 .dot-line{width:16px;height:3px;border-radius:2px;display:inline-block}
 /* vodorovný pásek dlaždic s předpovědí (hodiny / dny) mezi grafem a mapou */
-.strippanel{margin-top:14px;padding-bottom:9px}
+.strippanel{padding-bottom:9px}
+.chartpanel{margin-top:14px}
 .strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity}
 .strip::-webkit-scrollbar{display:none}
 .tile{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 9px 9px;border-radius:14px;scroll-snap-align:start;background:linear-gradient(165deg,var(--card-bg1),var(--card-bg2));border:1px solid var(--card-border);box-shadow:inset 0 1px 0 var(--hl)}
@@ -184,6 +185,13 @@ h1 span{background:linear-gradient(92deg,#46c8e8 10%,#3d8de0 90%);-webkit-backgr
 .logentry .ld{font-size:11.5px;color:var(--muted2);font-family:'IBM Plex Mono',monospace}
 .logentry ul{margin:0;padding-left:17px;display:flex;flex-direction:column;gap:5px}
 .logentry li{font-size:13px;line-height:1.45;color:var(--readout)}
+.modal-foot{display:flex;align-items:center;gap:10px;padding:12px 18px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--glass-border)}
+.btn-ok{flex:1;background:linear-gradient(135deg,#2f6fe0,#3da9c9);border:none;color:#fff;border-radius:12px;padding:11px 14px;font-size:14px;font-weight:600;font-family:'Public Sans',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(47,111,224,.28);transition:transform .15s, box-shadow .2s}
+.btn-ok:hover{box-shadow:0 6px 22px rgba(47,111,224,.4)}
+.btn-ok:active{transform:scale(.97)}
+.btn-link{background:none;border:none;color:var(--muted);font-size:12.5px;font-family:'Public Sans',sans-serif;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;padding:6px 2px;transition:color .15s}
+.btn-link:hover{color:var(--text)}
+.newsintro{font-size:13px;line-height:1.5;color:var(--muted);padding:14px 0 2px}
 .credit{margin-top:6px;text-align:center;font-size:11px;color:var(--muted2);font-family:'IBM Plex Mono',monospace}
 .credit b{color:var(--accent);font-weight:500}
 .err{color:#ff9b9b}
@@ -264,16 +272,16 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
     <div class="card"><div class="lbl" id="l4"></div><div class="val" id="v4">—</div><div class="sub" id="s4"></div></div>
   </div>
 
-  <div class="panel">
+  <div class="panel strippanel">
+    <div class="cap" id="stripCap">výhled po hodinách</div>
+    <div class="strip" id="strip"></div>
+  </div>
+
+  <div class="panel chartpanel">
     <div class="cap" id="cap">srážky mm/h · teplota °C — po hodinách</div>
     <svg id="chart" viewBox="0 0 360 260" height="260" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="readout" id="readout">Klepni nebo najeď na sloupec pro detail.</div>
     <div class="legend" id="legend"></div>
-  </div>
-
-  <div class="panel strippanel">
-    <div class="cap" id="stripCap">výhled po hodinách</div>
-    <div class="strip" id="strip"></div>
   </div>
 
   <div class="panel mappanel">
@@ -302,11 +310,23 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
   </div>
 </div>
 
+<div class="modal" id="newsModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>Co je nového</span><button class="modal-x" id="newsClose" aria-label="zavřít">×</button></div>
+    <div class="modal-body" id="newsBody"></div>
+    <div class="modal-foot">
+      <button class="btn-link" id="newsAll">celý seznam změn</button>
+      <button class="btn-ok" id="newsOk">Rozumím</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.32", VERSION_DATE="10. 9. 2026";
+const VERSION="1.33", VERSION_DATE="10. 9. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.33",d:"10. 9. 2026",c:["Pásek dlaždic s předpovědí se přesunul nad graf.","Po vydání nové verze se při prvním spuštění objeví okno s přehledem novinek – na každém zařízení jen jednou."]},
   {v:"1.32",d:"10. 9. 2026",c:["Mezi grafem a mapou přibyl posuvný pásek dlaždic s předpovědí: po hodinách ikona počasí, teplota a srážky, u 14denního výhledu teplotní rozmezí dne."]},
   {v:"1.31",d:"3. 9. 2026",c:["Meteomapa Windy má novou vrstvu „mraky“ (oblačnost)."]},
   {v:"1.30",d:"3. 9. 2026",c:["Za jasného počasí je obloha na pozadí úplně čistá – mraky se plynule rozplynou."]},
@@ -781,9 +801,38 @@ $("ver").addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preve
 $("logClose").addEventListener('click',closeLog);
 $("logModal").addEventListener('click',e=>{if(e.target===$("logModal"))closeLog();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$("logModal").hidden)closeLog();});
+
+/* upozornění na novinky — po vydání nové verze se na daném zařízení ukáže právě jednou */
+function entriesSince(seen){
+  const i=CHANGELOG.findIndex(e=>e.v===seen);
+  if(i===0)return[];                 /* naposled viděná verze je ta aktuální */
+  if(i>0)return CHANGELOG.slice(0,i);/* vše novější než naposled viděná */
+  return CHANGELOG.slice(0,1);       /* neznámá uložená verze — ukaž jen poslední změnu */
+}
+function closeNews(){$("newsModal").hidden=true;}
+function showNews(list){
+  $("newsBody").innerHTML=`<div class="newsintro">Srážkoměr se od tvé poslední návštěvy změnil:</div>`
+    +list.map(e=>`<div class="logentry"><div class="lh"><span class="lv">v${e.v}</span><span class="ld">${e.d}</span></div><ul>${e.c.map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('');
+  $("newsModal").hidden=false;
+}
+$("newsClose").addEventListener('click',closeNews);
+$("newsOk").addEventListener('click',closeNews);
+$("newsAll").addEventListener('click',()=>{closeNews();openLog();});
+$("newsModal").addEventListener('click',e=>{if(e.target===$("newsModal"))closeNews();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$("newsModal").hidden)closeNews();});
+function checkNews(){
+  const seen=loadPref('srk.seenver',null);
+  if(seen===VERSION)return;
+  /* úplně nový uživatel (žádná uložená nastavení) se o „změnách“ dozvídat nemá — jen si tiše poznamenáme verzi */
+  const known=seen!==null||loadPref('srk.last',null)!==null||loadPref('srk.favs',null)!==null||loadPref('srk.theme',null)!==null;
+  const list=entriesSince(seen);
+  savePref('srk.seenver',VERSION);
+  if(known&&list.length)setTimeout(()=>showNews(list),700);
+}
 window.addEventListener('resize',()=>renderCurrent());
 window.addEventListener('orientationchange',()=>setTimeout(renderCurrent,200));
 
+checkNews(); /* musí být dřív, než applyTheme uloží první nastavení — jinak by nové zařízení vypadalo jako známé */
 applyTheme(loadPref('srk.theme', window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'));
 mode=loadPref('srk.mode','48h');metric=loadPref('srk.metric','precip');
 $("seg").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.mode===mode));
