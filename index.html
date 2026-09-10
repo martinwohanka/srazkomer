@@ -146,6 +146,20 @@ h1 span{background:linear-gradient(92deg,#46c8e8 10%,#3d8de0 90%);-webkit-backgr
 .legend span{display:inline-flex;align-items:center;gap:5px;background:var(--legend-chip);border:1px solid var(--legend-chip-bd);border-radius:999px;padding:3px 9px}
 .dot{width:9px;height:9px;border-radius:3px;display:inline-block}
 .dot-line{width:16px;height:3px;border-radius:2px;display:inline-block}
+/* vodorovný pásek dlaždic s předpovědí (hodiny / dny) mezi grafem a mapou */
+.strippanel{margin-top:14px;padding-bottom:9px}
+.strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity}
+.strip::-webkit-scrollbar{display:none}
+.tile{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 9px 9px;border-radius:14px;scroll-snap-align:start;background:linear-gradient(165deg,var(--card-bg1),var(--card-bg2));border:1px solid var(--card-border);box-shadow:inset 0 1px 0 var(--hl)}
+.tile.now{border-color:rgba(70,200,232,.45);box-shadow:0 0 0 1px rgba(70,200,232,.18), inset 0 1px 0 var(--hl)}
+.tile svg{display:block;filter:drop-shadow(0 2px 5px rgba(0,0,0,.28))}
+.t-day{font-size:9.5px;line-height:12px;height:12px;color:var(--accent);letter-spacing:.3px}
+.t-hour,.t-date{font-size:10.5px;line-height:13px;color:var(--muted)}
+.t-date{font-size:9.5px;color:var(--muted2)}
+.t-temp{font-size:14px;font-weight:500;color:var(--text);margin-top:1px}
+.t-range{font-size:12.5px;font-weight:500;white-space:nowrap;margin-top:1px}
+.t-sub{font-size:9.5px;line-height:12px;height:12px;color:#46c8e8}
+.strip .t-day,.strip .t-hour,.strip .t-date,.strip .t-temp,.strip .t-range,.strip .t-sub{font-family:'IBM Plex Mono',monospace}
 .mappanel{margin-top:14px}
 .mapbar{display:flex;align-items:center;justify-content:space-between;gap:10px 12px;flex-wrap:wrap;padding-bottom:11px}
 .mapbar .cap{padding-bottom:0}
@@ -257,6 +271,11 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
     <div class="legend" id="legend"></div>
   </div>
 
+  <div class="panel strippanel">
+    <div class="cap" id="stripCap">výhled po hodinách</div>
+    <div class="strip" id="strip"></div>
+  </div>
+
   <div class="panel mappanel">
     <div class="mapbar">
       <div class="cap">meteomapa · Windy</div>
@@ -285,9 +304,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.31", VERSION_DATE="3. 9. 2026";
+const VERSION="1.32", VERSION_DATE="10. 9. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.32",d:"10. 9. 2026",c:["Mezi grafem a mapou přibyl posuvný pásek dlaždic s předpovědí: po hodinách ikona počasí, teplota a srážky, u 14denního výhledu teplotní rozmezí dne."]},
   {v:"1.31",d:"3. 9. 2026",c:["Meteomapa Windy má novou vrstvu „mraky“ (oblačnost)."]},
   {v:"1.30",d:"3. 9. 2026",c:["Za jasného počasí je obloha na pozadí úplně čistá – mraky se plynule rozplynou."]},
   {v:"1.29",d:"3. 9. 2026",c:["Mraky na pozadí přepracované do tří hloubkových vrstev s parallaxem a vlastním pohupováním.","Obloha nově reaguje na počasí – za jasna plují jen dva tři obláčky, při dešti a bouřce se zatáhne a mraky ztmavnou."]},
@@ -314,7 +334,7 @@ const CHANGELOG=[
   {v:"1.08",d:"22. 8. 2026",c:["Přidána meteorologická mapa Windy pod grafem (radar / srážky / vítr / teplota)."]},
   {v:"1.07 a starší",d:"14. 6. 2026",c:["Hodinová a denní předpověď srážek a teploty, samostatný režim větru.","Vyhledávání měst, oblíbená místa a geolokace.","Světlý a tmavý vzhled, offline cache poslední předpovědi."]}
 ];
-let coords=null,timer=null,ageTimer=null,mode='48h',metric='precip',theme='dark',hourlyData=null,dailyData=null,past24mm=null,tzOffsetMs=0,lastFetchTs=0,offline=false,favs=[];
+let coords=null,timer=null,ageTimer=null,mode='48h',metric='precip',theme='dark',hourlyData=null,dailyData=null,past24mm=null,tzOffsetMs=0,lastFetchTs=0,offline=false,favs=[],stripMode=null;
 const $=id=>document.getElementById(id);
 
 let memPref={};
@@ -527,11 +547,43 @@ function renderDailyWind(data){
   attachBars(svgEl,data,d=>`${d.dayLabel} ${d.dateLabel} · vítr ${d.wind.toFixed(1)} m/s · ${windLabel(d.wind)} · náraz ${d.gust.toFixed(1)} · směr ${dirName(d.dir)}`);
 }
 
+/* pásek dlaždic pod grafem: po hodinách (24/48 h) s ikonou a teplotou, u 14 dní s teplotním rozmezím */
+function renderStrip(){
+  const el=$("strip");if(!el)return;
+  /* odsun držíme jen při překreslení téhož režimu (změna velikosti, obnova dat); po přepnutí režimu začínáme od začátku */
+  const keep=(stripMode===mode)?el.scrollLeft:0;stripMode=mode;
+  const defs=`<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>${iconDefs()}</defs></svg>`;
+  let html='';
+  if(mode==='7d'){
+    if(!dailyData||!dailyData.length){el.innerHTML='';return;}
+    $("stripCap").textContent=`výhled po dnech · ${dailyData.length} dní · max / min`;
+    dailyData.forEach((d,i)=>{
+      html+=`<div class="tile${i===0?' now':''}"><div class="t-day">${d.dayLabel}</div><div class="t-date">${d.dateLabel}</div>`
+        +`<svg viewBox="0 0 40 40" width="38" height="38">${wIcon(d.code,true,20,19,32)}</svg>`
+        +`<div class="t-range"><span style="color:#e6a15a">${Math.round(d.tMax)}°</span><span style="color:var(--muted2)">/</span><span style="color:#5b8df0">${Math.round(d.tMin)}°</span></div>`
+        +`<div class="t-sub">${d.mm>=0.1?fmtMm(d.mm):'&nbsp;'}</div></div>`;
+    });
+  }else{
+    if(!hourlyData||!hourlyData.length){el.innerHTML='';return;}
+    const hrs=mode==='24h'?24:48, data=hourlyData.slice(0,hrs);
+    $("stripCap").textContent=`výhled po hodinách · dalších ${hrs} h`;
+    let lastDay=null;
+    data.forEach((d,i)=>{
+      const newDay=d.dayLabel!==lastDay;lastDay=d.dayLabel;
+      html+=`<div class="tile${i===0?' now':''}"><div class="t-day">${newDay?d.dayLabel:'&nbsp;'}</div><div class="t-hour">${d.hour}</div>`
+        +`<svg viewBox="0 0 40 40" width="38" height="38">${wIcon(d.code,d.day,20,19,32)}</svg>`
+        +`<div class="t-temp">${Math.round(d.temp)}°</div>`
+        +`<div class="t-sub">${d.mm>=0.1?d.mm.toFixed(1)+' mm':'&nbsp;'}</div></div>`;
+    });
+  }
+  el.innerHTML=defs+html;el.scrollLeft=keep;
+}
 function renderCurrent(){
   $("readout").textContent="Klepni nebo najeď na sloupec pro detail.";
   const hrs=mode==='24h'?24:48;
   if(metric==='wind'){if(mode==='7d'){if(dailyData)renderDailyWind(dailyData);}else{if(hourlyData)renderHourlyWind(hourlyData.slice(0,hrs));}}
   else{if(mode==='7d'){if(dailyData)renderDaily(dailyData);}else{if(hourlyData)renderHourly(hourlyData.slice(0,hrs));}}
+  renderStrip();
   const c=$("chart");c.style.animation='none';void c.offsetWidth;c.style.animation='chartin .45s cubic-bezier(.2,.7,.3,1)';
 }
 
