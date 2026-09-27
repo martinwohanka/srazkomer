@@ -27,6 +27,7 @@
   --panel-border:rgba(255,255,255,.09);--panel-hl:rgba(255,255,255,.06);
   --cap:#9fb4d4;--readout:#cfe0ff;--legend:#aabdda;--legend-chip:rgba(255,255,255,.04);--legend-chip-bd:rgba(255,255,255,.07);
   --cloud-top:#e8f1ff;--cloud-bot:#7e97bd;--cloud-op:.30;
+  --moon-a:#f4f8ff;--moon-b:#aebfe2;
 }
 [data-theme="light"]{
   --text:#172234;--muted:#4a5d78;--muted2:#64758f;--accent:#2f6fe0;
@@ -38,6 +39,7 @@
   --panel-border:rgba(30,55,90,.12);--panel-hl:rgba(255,255,255,.6);
   --cap:#4a5d78;--readout:#2a4a6e;--legend:#4a5d78;--legend-chip:rgba(30,55,90,.05);--legend-chip-bd:rgba(30,55,90,.08);
   --cloud-top:#ffffff;--cloud-bot:#93aecf;--cloud-op:.62;
+  --moon-a:#ffffff;--moon-b:#e3eaf6;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 @property --atm1{syntax:'<color>';inherits:true;initial-value:rgba(47,111,224,.22)}
@@ -202,6 +204,11 @@ h1 span{background:linear-gradient(92deg,#46c8e8 10%,#3d8de0 90%);-webkit-backgr
 .credit b{color:var(--accent);font-weight:500}
 .err{color:#ff9b9b}
 svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* Měsíc: neosvětlená část a obrys kotouče; ve světlém motivu tmavší, aby se osvětlená část neztrácela na bílém */
+.moon-dark{fill:#7f8fb0;opacity:.3}
+.moon-rim{stroke:rgba(174,191,226,.18)}
+[data-theme="light"] .moon-dark{fill:#5a6a8e;opacity:.42}
+[data-theme="light"] .moon-rim{stroke:rgba(70,90,130,.5)}
 </style>
 </head>
 <body>
@@ -209,10 +216,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
   <radialGradient id="gSun" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffefb0"/><stop offset="0.55" stop-color="#f9cb4a"/><stop offset="1" stop-color="#ef9f2a"/></radialGradient>
   <linearGradient id="gCloud" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6eefa"/><stop offset="1" stop-color="#90a6c8"/></linearGradient>
   <linearGradient id="gCloudDark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6c5dc"/><stop offset="1" stop-color="#67809f"/></linearGradient>
-  <linearGradient id="gMoon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f8ff"/><stop offset="1" stop-color="#aebfe2"/></linearGradient>
+  <linearGradient id="gMoon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--moon-a)"/><stop offset="1" style="stop-color:var(--moon-b)"/></linearGradient>
   <linearGradient id="gBolt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5a623"/></linearGradient>
   <linearGradient id="gDrop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fd8ec"/><stop offset="1" stop-color="#2f8fd0"/></linearGradient>
-  <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--cloud-top)"/><stop offset="1" stop-color="var(--cloud-bot)"/></linearGradient>
+  <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--cloud-top)"/><stop offset="1" style="stop-color:var(--cloud-bot)"/></linearGradient>
   <symbol id="cld1" viewBox="0 0 200 100"><circle cx="58" cy="60" r="30"/><circle cx="96" cy="42" r="40"/><circle cx="134" cy="52" r="30"/><circle cx="162" cy="64" r="24"/><rect x="40" y="56" width="134" height="38" rx="19"/></symbol>
   <symbol id="cld2" viewBox="0 0 200 100"><circle cx="70" cy="55" r="34"/><circle cx="108" cy="36" r="38"/><circle cx="140" cy="58" r="28"/><rect x="46" y="52" width="110" height="40" rx="20"/></symbol>
   <symbol id="cld3" viewBox="0 0 200 100"><circle cx="52" cy="62" r="24"/><circle cx="86" cy="50" r="34"/><circle cx="122" cy="46" r="36"/><circle cx="156" cy="62" r="26"/><rect x="32" y="58" width="142" height="34" rx="17"/></symbol>
@@ -337,9 +344,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.34", VERSION_DATE="27. 9. 2026";
+const VERSION="1.35", VERSION_DATE="27. 9. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.35",d:"27. 9. 2026",c:["Ikona měsíce ukazuje jeho skutečnou fázi – srpek, čtvrť, úplněk (na jižní polokouli zrcadlově).","V kartě aktuálního počasí přibyl údaj o Měsíci: fáze, kolik procent je osvětleno a kdy bude příští úplněk nebo nov."]},
   {v:"1.34",d:"27. 9. 2026",c:["Za jasné noci je zase vidět srpek měsíce.","Lupa ve vyhledávání je vidět a našeptávač měst jde ovládat klávesnicí (šipky, Enter, Escape).","Síla větru se pojmenovává podle správné české Beaufortovy stupnice a graf větru má měřítko podle skutečných nárazů.","Graf 48 h má oddělovač u každé půlnoci, 14denní graf zřetelně odlišuje orientační dny 11–14 a vybraný sloupec grafu se zvýrazní.","Srážky se všude uvádějí s jedním desetinným místem; bez deště ukazuje dlaždice „nejdeštivější“ pomlčku.","Odebrané oblíbené město jde 5 sekund vrátit tlačítkem Zpět."]},
   {v:"1.33",d:"10. 9. 2026",c:["Pásek dlaždic s předpovědí se přesunul nad graf.","Po vydání nové verze se při prvním spuštění objeví okno s přehledem novinek – na každém zařízení jen jednou."]},
   {v:"1.32",d:"10. 9. 2026",c:["Mezi grafem a mapou přibyl posuvný pásek dlaždic s předpovědí: po hodinách ikona počasí, teplota a srážky, u 14denního výhledu teplotní rozmezí dne."]},
@@ -413,11 +421,46 @@ function dirName(deg){const n=['S','SV','V','JV','J','JZ','Z','SZ'];return n[Mat
 function domDir(arr){let sx=0,sy=0;arr.forEach(a=>{const r=a.deg*Math.PI/180,w=Math.max(0.1,a.w);sx+=Math.cos(r)*w;sy+=Math.sin(r)*w;});if(sx===0&&sy===0)return'—';let d=Math.atan2(sy,sx)*180/Math.PI;if(d<0)d+=360;return dirName(d);}
 function wmoDesc(code){if(code===0)return"jasno";if(code===1)return"skoro jasno";if(code===2)return"polojasno";if(code===3)return"zataženo";if(code===45||code===48)return"mlha";if(code>=51&&code<=57)return"mrholení";if(code>=61&&code<=67)return"déšť";if(code>=71&&code<=77)return"sněžení";if(code>=80&&code<=82)return"přeháňky";if(code===85||code===86)return"sněhové přeháňky";if(code>=95)return"bouřka";return"oblačno";}
 
-/* gradienty ikon (gSun, gCloud, gCloudDark, gMoon, gBolt, gDrop) jsou definované jen jednou — ve skrytém <svg> na začátku <body> */
-function wIcon(code,isDay,cx,cy,s){
+/* Měsíc: fáze z rozdílu ekliptikálních délek Měsíce a Slunce (nov 0, 1. čtvrť 0.25, úplněk 0.5, posl. čtvrť 0.75),
+   osvětlení z úhlu Slunce–Měsíc–Země. Zjednodušená teorie (SunCalc + hlavní poruchy dráhy Měsíce),
+   proti tabulkovým časům fází 2024–2026 odchylka do 1 h. */
+const RAD=Math.PI/180, OBL=RAD*23.4397;
+function moonPhase(date){
+  const sin=Math.sin,cos=Math.cos,d=date.valueOf()/86400000-0.5+2440588-2451545;
+  const eq=(l,b)=>({ra:Math.atan2(sin(l)*cos(OBL)-Math.tan(b)*sin(OBL),cos(l)),dec:Math.asin(sin(b)*cos(OBL)+cos(b)*sin(OBL)*sin(l))});
+  const M=RAD*(357.5291+0.98560028*d), sLon=M+RAD*(1.9148*sin(M)+0.02*sin(2*M)+0.0003*sin(3*M))+RAD*102.9372+Math.PI, s=eq(sLon,0);
+  const Mm=RAD*(134.963+13.064993*d), F=RAD*(93.272+13.229350*d), D=RAD*(297.850+12.190749*d);
+  const mLon=RAD*(218.316+13.176396*d)+RAD*(6.289*sin(Mm)+1.274*sin(2*D-Mm)+0.658*sin(2*D)+0.214*sin(2*Mm)-0.186*sin(M)-0.114*sin(2*F));
+  const m=eq(mLon,RAD*5.128*sin(F)), dist=385001-20905*cos(Mm)-3699*cos(2*D-Mm)-2956*cos(2*D), SD=149598000;
+  const phi=Math.acos(sin(s.dec)*sin(m.dec)+cos(s.dec)*cos(m.dec)*cos(s.ra-m.ra)), inc=Math.atan2(SD*sin(phi),dist-SD*cos(phi));
+  const ph=((mLon-sLon)/(2*Math.PI))%1;
+  return {fraction:(1+cos(inc))/2, phase:ph<0?ph+1:ph};
+}
+/* hlavní fáze drží název ±1 den kolem přesného okamžiku */
+const MOON_NAMES=[[0.0339,'nov'],[0.2161,'dorůstající srpek'],[0.2839,'první čtvrť'],[0.4661,'dorůstající měsíc'],[0.5339,'úplněk'],[0.7161,'ubývající měsíc'],[0.7839,'poslední čtvrť'],[0.9661,'ubývající srpek'],[1.01,'nov']];
+function moonName(p){return MOON_NAMES.find(x=>p<x[0])[1];}
+function isSouth(){return !!(coords&&coords.lat<0);}
+/* kotouč Měsíce ve fázi p: neosvětlená část slabě, osvětlená gradientem gMoon; na jižní polokouli zrcadlově */
+function moonDisc(x,y,R,p,south){
+  const c=Math.cos(2*Math.PI*p), waxing=p<0.5, crescent=c>0, rx=(Math.abs(c)*R).toFixed(2);
+  const lit=`M${x},${y-R} a${R},${R} 0 0 ${waxing?1:0} 0,${2*R} a${rx},${R} 0 0 ${waxing===crescent?0:1} 0,${-2*R} Z`;
+  return `<circle class="moon-dark" cx="${x}" cy="${y}" r="${R}"/><path d="${lit}" fill="url(#gMoon)"${south?` transform="translate(${2*x},0) scale(-1,1)"`:''}/><circle class="moon-rim" cx="${x}" cy="${y}" r="${R}" fill="none" stroke-width="${(R*0.1).toFixed(2)}"/>`;
+}
+/* nejbližší úplněk (full) nebo nov po čase t0 — krok 1 h */
+function nextMoonEvent(t0,full){let t=t0,prev=moonPhase(new Date(t)).phase;for(let k=0;k<24*32;k++){t+=3600000;const p=moonPhase(new Date(t)).phase;if(full?(prev<0.5&&p>=0.5):p<prev)return t;prev=p;}return t;}
+function moonInfo(){
+  const cur=moonPhase(new Date()), name=moonName(cur.phase);let full=cur.phase<0.5, t=nextMoonEvent(Date.now(),full);
+  /* když právě je úplněk/nov, ukaž až ten další (opačný) — jinak by čip hlásil „úplněk · úplněk dnes" */
+  if(name===(full?'úplněk':'nov')){full=!full;t=nextMoonEvent(t+7200000,full);}
+  const loc=new Date(t+tzOffsetMs);
+  return {phase:cur.phase,name,pct:Math.round(cur.fraction*100),nextName:full?'úplněk':'nov',nextDate:`${loc.getUTCDate()}. ${loc.getUTCMonth()+1}.`};
+}
+/* gradienty ikon (gSun, gCloud, gCloudDark, gMoon, gBolt, gDrop) jsou definované jen jednou — ve skrytém <svg> na začátku <body>.
+   mp = fáze Měsíce pro danou hodinu (bez ní se vezme aktuální) */
+function wIcon(code,isDay,cx,cy,s,mp){
   const r=s/2;
   const sun=(ox=0,oy=0,sc=1)=>{const rr=r*0.34*sc;let p=`<circle cx="${cx+ox}" cy="${cy+oy}" r="${rr*1.7}" fill="#f9cb4a" opacity="0.18"/>`;for(let a=0;a<360;a+=45){const rad=a*Math.PI/180;p+=`<line x1="${(cx+ox+Math.cos(rad)*rr*1.45).toFixed(1)}" y1="${(cy+oy+Math.sin(rad)*rr*1.45).toFixed(1)}" x2="${(cx+ox+Math.cos(rad)*rr*1.95).toFixed(1)}" y2="${(cy+oy+Math.sin(rad)*rr*1.95).toFixed(1)}" stroke="#f9cb4a" stroke-width="1.3" stroke-linecap="round"/>`;}p+=`<circle cx="${cx+ox}" cy="${cy+oy}" r="${rr}" fill="url(#gSun)"/>`;return p;};
-  const moon=(ox=0,oy=0,sc=1)=>{const rr=r*0.5*sc;return `<circle cx="${cx+ox}" cy="${cy+oy}" r="${rr*1.4}" fill="#aebfe2" opacity="0.13"/><path d="M${cx+ox+rr*0.45},${cy+oy-rr} a${rr},${rr} 0 1 0 0,${rr*2} a${rr*1.3},${rr*1.3} 0 0 1 0,${-rr*2} Z" fill="url(#gMoon)"/>`;};
+  const moon=(ox=0,oy=0,sc=1)=>{const rr=r*0.5*sc,ph=mp??moonPhase(new Date()).phase,lit=(1-Math.cos(2*Math.PI*ph))/2;return `<circle cx="${cx+ox}" cy="${cy+oy}" r="${rr*1.4}" fill="#aebfe2" opacity="${(0.04+0.1*lit).toFixed(2)}"/>`+moonDisc(cx+ox,cy+oy,rr,ph,isSouth());};
   const cloud=(ox=0,oy=0,sc=1,grad='gCloud')=>{const c=r*sc;return `<g fill="url(#${grad})"><circle cx="${cx+ox-c*0.42}" cy="${cy+oy+c*0.1}" r="${c*0.4}"/><circle cx="${cx+ox+c*0.04}" cy="${cy+oy-c*0.18}" r="${c*0.52}"/><circle cx="${cx+ox+c*0.48}" cy="${cy+oy+c*0.12}" r="${c*0.38}"/><rect x="${cx+ox-c*0.62}" y="${cy+oy+c*0.02}" width="${c*1.22}" height="${c*0.48}" rx="${c*0.24}"/></g>`;};
   const drop=(x,y)=>{const d=2.1;return `<path d="M${x},${y} c ${d*0.85},${d*1.1} ${d*0.55},${d*1.9} 0,${d*1.9} c ${-d*0.55},0 ${-d*0.85},${-d*0.8} 0,${-d*1.9} Z" fill="url(#gDrop)"/>`;};
   const drops=(n)=>{let p='';[-r*0.36,0,r*0.36].slice(0,n).forEach((x,k)=>{p+=drop(cx+x,cy+r*0.42+(k%2?2:0));});return p;};
@@ -504,7 +547,7 @@ function renderHourly(data){
   o.s+=`<text x="${SVG_W-8}" y="${T+PH/2}" text-anchor="middle" dominant-baseline="middle" fill="${C.temp}" font-size="8.5" font-family="IBM Plex Mono,monospace" letter-spacing="1.5" transform="rotate(90,${SVG_W-8},${T+PH/2})">°C</text>`;
   /* 48h režim: pevně každá 3. hodina (text i ikona). 24h režim: podle šířky sloupce. */
   const xStep=N>24?3:Math.max(1,Math.ceil(12/bw)), iStep=N>24?3:xStep*(bw*xStep>=16?1:2);
-  data.forEach((d,i)=>{if(i%xStep!==0)return;o.s+=`<text x="${bcx(i)}" y="${T+PH+13}" text-anchor="middle" fill="${C.num}" font-size="8.5" font-family="IBM Plex Mono,monospace">${d.hour.slice(0,2)}</text>`+(i%iStep===0?wIcon(d.code,d.day,bcx(i),T+PH+27,15):"");});
+  data.forEach((d,i)=>{if(i%xStep!==0)return;o.s+=`<text x="${bcx(i)}" y="${T+PH+13}" text-anchor="middle" fill="${C.num}" font-size="8.5" font-family="IBM Plex Mono,monospace">${d.hour.slice(0,2)}</text>`+(i%iStep===0?wIcon(d.code,d.day,bcx(i),T+PH+27,15,d.mp):"");});
   svgEl.innerHTML=o.s;
   attachBars(svgEl,data,d=>`${d.dayLabel} ${d.hour} · ${d.mm.toFixed(1)} mm · ${label(d.mm)} · ${d.prob}% · ${d.temp.toFixed(1)}°C · vítr ${d.wind.toFixed(1)} m/s (náraz ${d.gust.toFixed(1)})`,{T,PH,bw});
 }
@@ -625,7 +668,7 @@ function renderStrip(){
     data.forEach((d,i)=>{
       const newDay=d.dayLabel!==lastDay;lastDay=d.dayLabel;
       html+=`<div class="tile${i===0?' now':''}"><div class="t-day">${newDay?d.dayLabel:'&nbsp;'}</div><div class="t-hour">${d.hour}</div>`
-        +`<svg viewBox="0 0 40 40" width="38" height="38">${wIcon(d.code,d.day,20,19,32)}</svg>`
+        +`<svg viewBox="0 0 40 40" width="38" height="38">${wIcon(d.code,d.day,20,19,32,d.mp)}</svg>`
         +`<div class="t-temp">${Math.round(d.temp)}°</div>`
         +`<div class="t-sub">${d.mm>=0.1?d.mm.toFixed(1)+' mm':'&nbsp;'}</div></div>`;
     });
@@ -663,7 +706,7 @@ const WD=['ne','po','út','st','čt','pá','so'];
 /* "teď" v místě předpovědi vyjádřené jako lokální Date (čteme přes UTC gettery, aby se offset nezapočítal dvakrát) */
 function nowAtLoc(offMs){const u=new Date(Date.now()+offMs);return new Date(u.getUTCFullYear(),u.getUTCMonth(),u.getUTCDate(),u.getUTCHours(),u.getUTCMinutes(),u.getUTCSeconds());}
 function nextDayStr(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).toDateString();}
-function buildHourly(j){const H=j.hourly,times=H.time;tzOffsetMs=(j.utc_offset_seconds??0)*1000;const nowLoc=nowAtLoc(tzOffsetMs),today=nowLoc.toDateString(),tomorrowLoc=nextDayStr(nowLoc);let start=times.findIndex(t=>parseLocal(t)>=new Date(nowLoc.getTime()-3600000));if(start<0)start=0;const data=[];for(let i=start;i<start+48&&i<times.length;i++){const dt=parseLocal(times[i]);const dayLabel=dt.toDateString()===today?"dnes":dt.toDateString()===tomorrowLoc?"zítra":WD[dt.getDay()];data.push({hour:fmtHour(dt),h:dt.getHours(),dayLabel,dateLabel:fmtDate(dt),mm:Math.max(0,H.precipitation[i]??0),prob:H.precipitation_probability[i]??0,temp:H.temperature_2m[i]??0,feels:H.apparent_temperature?.[i]??H.temperature_2m[i]??0,hum:H.relativehumidity_2m?.[i]??null,uv:H.uv_index?.[i]??null,wind:(H.windspeed_10m?.[i]??0)*KMH2MS,gust:(H.windgusts_10m?.[i]??0)*KMH2MS,dir:H.winddirection_10m?.[i]??0,code:H.weathercode?.[i]??0,day:(H.is_day?.[i]??1)===1});}hourlyData=data;}
+function buildHourly(j){const H=j.hourly,times=H.time;tzOffsetMs=(j.utc_offset_seconds??0)*1000;const nowLoc=nowAtLoc(tzOffsetMs),today=nowLoc.toDateString(),tomorrowLoc=nextDayStr(nowLoc);let start=times.findIndex(t=>parseLocal(t)>=new Date(nowLoc.getTime()-3600000));if(start<0)start=0;const data=[];for(let i=start;i<start+48&&i<times.length;i++){const dt=parseLocal(times[i]);const dayLabel=dt.toDateString()===today?"dnes":dt.toDateString()===tomorrowLoc?"zítra":WD[dt.getDay()];data.push({hour:fmtHour(dt),h:dt.getHours(),dayLabel,dateLabel:fmtDate(dt),mp:moonPhase(new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate(),dt.getHours(),dt.getMinutes())-tzOffsetMs)).phase,mm:Math.max(0,H.precipitation[i]??0),prob:H.precipitation_probability[i]??0,temp:H.temperature_2m[i]??0,feels:H.apparent_temperature?.[i]??H.temperature_2m[i]??0,hum:H.relativehumidity_2m?.[i]??null,uv:H.uv_index?.[i]??null,wind:(H.windspeed_10m?.[i]??0)*KMH2MS,gust:(H.windgusts_10m?.[i]??0)*KMH2MS,dir:H.winddirection_10m?.[i]??0,code:H.weathercode?.[i]??0,day:(H.is_day?.[i]??1)===1});}hourlyData=data;}
 /* úhrn srážek za uplynulých 24 h (hodinová hodnota = úhrn za předchozí hodinu) */
 function buildPast24(j){
   const H=j.hourly;if(!H||!H.time){past24mm=null;return;}
@@ -673,7 +716,7 @@ function buildPast24(j){
   past24mm=n?sum:null;
 }
 function buildDaily(j){const D=j.daily,nowLoc=nowAtLoc((j.utc_offset_seconds??0)*1000),today=nowLoc.toDateString(),tomorrowLoc=nextDayStr(nowLoc);const data=[];const todayMid=new Date(nowLoc.getFullYear(),nowLoc.getMonth(),nowLoc.getDate());for(let i=0;i<D.time.length;i++){const dt=parseLocal(D.time[i]+"T12:00");if(dt<todayMid)continue;const dayLabel=dt.toDateString()===today?"dnes":dt.toDateString()===tomorrowLoc?"zítra":WD[dt.getDay()];data.push({date:dt,dayLabel,dateLabel:fmtDate(dt),mm:Math.max(0,D.precipitation_sum[i]??0),prob:D.precipitation_probability_max?.[i]??0,tMax:D.temperature_2m_max[i]??0,tMin:D.temperature_2m_min[i]??0,wind:(D.windspeed_10m_max?.[i]??0)*KMH2MS,gust:(D.windgusts_10m_max?.[i]??0)*KMH2MS,dir:D.winddirection_10m_dominant?.[i]??0,code:D.weathercode?.[i]??0,sunrise:D.sunrise?.[i]?fmtHour(parseLocal(D.sunrise[i])):null,sunset:D.sunset?.[i]?fmtHour(parseLocal(D.sunset[i])):null});}dailyData=data;}
-function fillNow(){if(!hourlyData||!hourlyData[0])return;const c=hourlyData[0],td=dailyData&&dailyData[0];$("nowIcon").innerHTML=wIcon(c.code,c.day,30,30,52);$("nowTemp").textContent=Math.round(c.temp)+"°C";$("nowDesc").textContent=wmoDesc(c.code)+" · vítr "+c.wind.toFixed(1)+" m/s";$("nowMeta").innerHTML=`pocitově <b>${Math.round(c.feels)}°</b>`+(td?` · dnes <b>${Math.round(td.tMin)}°</b> / <b>${Math.round(td.tMax)}°</b>`:'');let ex='';if(td&&td.sunrise)ex+=`<span>východ <b>${td.sunrise}</b></span>`;if(td&&td.sunset)ex+=`<span>západ <b>${td.sunset}</b></span>`;if(c.hum!=null)ex+=`<span>vlhkost <b>${Math.round(c.hum)} %</b></span>`;if(c.uv!=null)ex+=`<span>UV <b>${Math.round(c.uv)}</b></span>`;$("nowExtra").innerHTML=ex;$("nowExtra").style.display=ex?'flex':'none';buildAdvisories();applyWeatherBg(c.code,c.day);}
+function fillNow(){if(!hourlyData||!hourlyData[0])return;const c=hourlyData[0],td=dailyData&&dailyData[0];$("nowIcon").innerHTML=wIcon(c.code,c.day,30,30,52,c.mp);$("nowTemp").textContent=Math.round(c.temp)+"°C";$("nowDesc").textContent=wmoDesc(c.code)+" · vítr "+c.wind.toFixed(1)+" m/s";$("nowMeta").innerHTML=`pocitově <b>${Math.round(c.feels)}°</b>`+(td?` · dnes <b>${Math.round(td.tMin)}°</b> / <b>${Math.round(td.tMax)}°</b>`:'');let ex='';if(td&&td.sunrise)ex+=`<span>východ <b>${td.sunrise}</b></span>`;if(td&&td.sunset)ex+=`<span>západ <b>${td.sunset}</b></span>`;if(c.hum!=null)ex+=`<span>vlhkost <b>${Math.round(c.hum)} %</b></span>`;if(c.uv!=null)ex+=`<span>UV <b>${Math.round(c.uv)}</b></span>`;const mo=moonInfo();ex+=`<span class="moonchip"><svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">${moonDisc(10,10,7.5,mo.phase,isSouth())}</svg>${mo.name} <b>${mo.pct} %</b> · ${mo.nextName} <b>${mo.nextDate}</b></span>`;$("nowExtra").innerHTML=ex;$("nowExtra").style.display=ex?'flex':'none';buildAdvisories();applyWeatherBg(c.code,c.day);}
 
 /* dynamické pozadí dle počasí + den/noc — mění jen barevné „záře", základ kvůli čitelnosti zůstává */
 function weatherCat(code){
