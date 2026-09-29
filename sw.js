@@ -1,4 +1,4 @@
-const CACHE = 'srazkomer-v1';
+const CACHE = 'srazkomer-v2';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -12,15 +12,18 @@ self.addEventListener('activate', e => {
   );
 });
 
-// jen soubory appky (stejný origin) jdou přes cache; API předpovědi a mapa jdou vždy na síť
+// jen soubory appky (stejný origin) jdou přes cache; API předpovědi a mapa jdou vždy na síť.
+// Načtení stránky (a index.html) se vždy ověří na serveru (cache:'no-cache' → ETag/304), aby prohlížeč
+// nepodstrčil kopii z HTTP cache — hosting ji povoluje držet až hodinu po nasazení.
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
+  const isPage = e.request.mode === 'navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/');
+  const req = isPage && e.request.method === 'GET' ? fetch(url.href, {cache: 'no-cache', credentials: 'same-origin'}) : fetch(e.request);
 
   e.respondWith(
-    fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy));
+    req.then(res => {
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return res;
     }).catch(() => caches.match(e.request).then(r => r || caches.match('./index.html')))
   );
