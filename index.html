@@ -344,9 +344,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.36", VERSION_DATE="29. 9. 2026";
+const VERSION="1.37", VERSION_DATE="2. 10. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.37",d:"2. 10. 2026",c:["Meteomapa se po otevření sama rozběhne – radar přehrává pohyb srážek za poslední hodinu, ostatní vrstvy předpověď."]},
   {v:"1.36",d:"29. 9. 2026",c:["Appka si sama hlídá novou verzi – po návratu do appky se rovnou načte, při používání nabídne tlačítko Načíst.","Nová verze se po vydání projeví hned, už není potřeba appku ručně zavírat."]},
   {v:"1.35",d:"27. 9. 2026",c:["Ikona měsíce ukazuje jeho skutečnou fázi – srpek, čtvrť, úplněk (na jižní polokouli zrcadlově).","V kartě aktuálního počasí přibyl údaj o Měsíci: fáze, kolik procent je osvětleno a kdy bude příští úplněk nebo nov."]},
   {v:"1.34",d:"27. 9. 2026",c:["Za jasné noci je zase vidět srpek měsíce.","Lupa ve vyhledávání je vidět a našeptávač měst jde ovládat klávesnicí (šipky, Enter, Escape).","Síla větru se pojmenovává podle správné české Beaufortovy stupnice a graf větru má měřítko podle skutečných nárazů.","Graf 48 h má oddělovač u každé půlnoci, 14denní graf zřetelně odlišuje orientační dny 11–14 a vybraný sloupec grafu se zvýrazní.","Srážky se všude uvádějí s jedním desetinným místem; bez deště ukazuje dlaždice „nejdeštivější“ pomlčku.","Odebrané oblíbené město jde 5 sekund vrátit tlačítkem Zpět."]},
@@ -695,7 +696,8 @@ function buildMapSrc(){
   const ov=mapOverlay,product=MAP_PRODUCT[ov]||'ecmwf';
   let cLat=dLat,cLon=dLon,zoom=(ov==='radar')?8:7;
   if(inCR(+c.lat,+c.lon)){cLat=CR_CENTER.lat;cLon=CR_CENTER.lon;zoom=6;}
-  return `https://embed.windy.com/embed2.html?lat=${cLat}&lon=${cLon}&detailLat=${dLat}&detailLon=${dLon}&zoom=${zoom}&level=surface&overlay=${ov}&product=${product}&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1`;
+  /* play=1: embed po načtení sám spustí přehrávání — u radaru poslední hodinu, u ostatních vrstev předpověď */
+  return `https://embed.windy.com/embed2.html?lat=${cLat}&lon=${cLon}&detailLat=${dLat}&detailLon=${dLon}&zoom=${zoom}&level=surface&overlay=${ov}&product=${product}&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1&play=1`;
 }
 function updateMap(){const f=$("windyFrame");if(!f)return;const src=buildMapSrc();if(f.getAttribute('src')!==src)f.setAttribute('src',src);}
 $("segMap").querySelectorAll('button').forEach(b=>{b.addEventListener('click',()=>{mapOverlay=b.dataset.ov;$("segMap").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));savePref('srk.mapov',mapOverlay);updateMap();});});
