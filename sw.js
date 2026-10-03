@@ -1,5 +1,5 @@
-const CACHE = 'srazkomer-v3';
-const SHELL = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-180.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png'];
+const CACHE = 'srazkomer-v4';
+const SHELL = ['./', './index.html', './manifest.json', './icon.svg?v=1.39', './icon-192.png?v=1.39', './icon-180.png?v=1.39', './icon-512.png?v=1.39', './icon-maskable-192.png?v=1.39', './icon-maskable-512.png?v=1.39'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
