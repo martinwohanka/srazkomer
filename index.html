@@ -26,7 +26,6 @@
   --panel-bg:linear-gradient(170deg,rgba(24,33,52,.82),rgba(15,21,37,.9));
   --panel-border:rgba(255,255,255,.09);--panel-hl:rgba(255,255,255,.06);
   --cap:#9fb4d4;--readout:#cfe0ff;--legend:#aabdda;--legend-chip:rgba(255,255,255,.04);--legend-chip-bd:rgba(255,255,255,.07);
-  --cloud-top:#e8f1ff;--cloud-bot:#7e97bd;--cloud-op:.30;
   --moon-a:#f4f8ff;--moon-b:#aebfe2;
 }
 [data-theme="light"]{
@@ -38,7 +37,6 @@
   --panel-bg:linear-gradient(170deg,rgba(255,255,255,.9),rgba(231,241,253,.95));
   --panel-border:rgba(30,55,90,.12);--panel-hl:rgba(255,255,255,.6);
   --cap:#4a5d78;--readout:#2a4a6e;--legend:#4a5d78;--legend-chip:rgba(30,55,90,.05);--legend-chip-bd:rgba(30,55,90,.08);
-  --cloud-top:#ffffff;--cloud-bot:#93aecf;--cloud-op:.62;
   --moon-a:#ffffff;--moon-b:#e3eaf6;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -60,24 +58,8 @@ body{
 @keyframes fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes chartin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
-/* plovoucí mraky na pozadí — tři hloubkové vrstvy, každá jinou rychlostí (parallax);
-   hustota a odstín se řídí aktuálním počasím přes --cloud-mul / --cloud-bot (viz applyWeatherBg) */
-.clouds{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
-.cl{position:absolute;top:var(--y);left:0;width:var(--w);
-  opacity:calc(var(--cloud-op) * var(--l) * var(--cloud-mul,1));
-  animation:cl-drift var(--dur) linear infinite;animation-delay:var(--del);
-  will-change:transform;transition:opacity 1.1s ease}
-.cl svg{display:block;width:100%;height:auto;fill:url(#cloudGrad);
-  animation:cl-bob var(--bob) ease-in-out infinite alternate;animation-delay:var(--del)}
-.cl-far{--l:.5;filter:blur(2.6px)}
-.cl-mid{--l:.78;filter:blur(1.4px)}
-.cl-near{--l:1;filter:blur(.6px)}
-[data-theme="light"] .cl-near{filter:blur(.6px) drop-shadow(0 12px 20px rgba(40,70,120,.14))}
-[data-theme="light"] .cl-mid{filter:blur(1.4px) drop-shadow(0 10px 16px rgba(40,70,120,.1))}
-#cloudGrad stop{transition:stop-color 1.1s ease}
-@keyframes cl-drift{from{transform:translateX(-115%)}to{transform:translateX(calc(100vw + 15%))}}
-@keyframes cl-bob{from{transform:translateY(-7px)}to{transform:translateY(7px)}}
-@media (prefers-reduced-motion: reduce){.clouds{display:none}}
+/* živé pozadí podle počasí (viz Sky) — canvas přes celou obrazovku pod obsahem; lvh, aby se při skrývání lišty v Safari neměnila velikost */
+#sky{position:fixed;top:0;left:0;width:100%;height:100vh;height:100lvh;pointer-events:none;z-index:0}
 .head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .place{display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:13px;letter-spacing:.4px;font-weight:600}
 h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:31px;line-height:1.05;margin-top:6px;letter-spacing:-.6px;white-space:nowrap}
@@ -219,21 +201,8 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
   <linearGradient id="gMoon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--moon-a)"/><stop offset="1" style="stop-color:var(--moon-b)"/></linearGradient>
   <linearGradient id="gBolt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5a623"/></linearGradient>
   <linearGradient id="gDrop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fd8ec"/><stop offset="1" stop-color="#2f8fd0"/></linearGradient>
-  <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--cloud-top)"/><stop offset="1" style="stop-color:var(--cloud-bot)"/></linearGradient>
-  <symbol id="cld1" viewBox="0 0 200 100"><circle cx="58" cy="60" r="30"/><circle cx="96" cy="42" r="40"/><circle cx="134" cy="52" r="30"/><circle cx="162" cy="64" r="24"/><rect x="40" y="56" width="134" height="38" rx="19"/></symbol>
-  <symbol id="cld2" viewBox="0 0 200 100"><circle cx="70" cy="55" r="34"/><circle cx="108" cy="36" r="38"/><circle cx="140" cy="58" r="28"/><rect x="46" y="52" width="110" height="40" rx="20"/></symbol>
-  <symbol id="cld3" viewBox="0 0 200 100"><circle cx="52" cy="62" r="24"/><circle cx="86" cy="50" r="34"/><circle cx="122" cy="46" r="36"/><circle cx="156" cy="62" r="26"/><rect x="32" y="58" width="142" height="34" rx="17"/></symbol>
 </defs></svg>
-<div class="clouds" aria-hidden="true">
-  <div class="cl cl-far"       style="--y:5%;--w:120px;--dur:210s;--del:-10s;--bob:30s"><svg viewBox="0 0 200 100"><use href="#cld1"/></svg></div>
-  <div class="cl cl-far"       style="--y:34%;--w:100px;--dur:240s;--del:-120s;--bob:34s"><svg viewBox="0 0 200 100"><use href="#cld3"/></svg></div>
-  <div class="cl cl-mid"       style="--y:17%;--w:190px;--dur:150s;--del:-60s;--bob:24s"><svg viewBox="0 0 200 100"><use href="#cld2"/></svg></div>
-  <div class="cl cl-mid"       style="--y:57%;--w:210px;--dur:165s;--del:-135s;--bob:27s"><svg viewBox="0 0 200 100"><use href="#cld1"/></svg></div>
-  <div class="cl cl-mid"       style="--y:76%;--w:170px;--dur:140s;--del:-25s;--bob:22s"><svg viewBox="0 0 200 100"><use href="#cld3"/></svg></div>
-  <div class="cl cl-near"      style="--y:44%;--w:300px;--dur:105s;--del:-70s;--bob:19s"><svg viewBox="0 0 200 100"><use href="#cld2"/></svg></div>
-  <div class="cl cl-near"      style="--y:88%;--w:260px;--dur:95s;--del:-15s;--bob:17s"><svg viewBox="0 0 200 100"><use href="#cld1"/></svg></div>
-  <div class="cl cl-near"      style="--y:27%;--w:240px;--dur:118s;--del:-95s;--bob:21s"><svg viewBox="0 0 200 100"><use href="#cld3"/></svg></div>
-</div>
+<canvas id="sky" aria-hidden="true"></canvas>
 <div class="wrap">
   <div class="head">
     <div>
@@ -344,9 +313,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.39", VERSION_DATE="3. 10. 2026";
+const VERSION="1.40", VERSION_DATE="9. 10. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.40",d:"9. 10. 2026",c:["Pozadí appky ukazuje aktuální počasí: ve dne slunce, které putuje po obloze od východu k západu, v noci hvězdy a Měsíc v jeho skutečné fázi.","Hezčí, plastické mraky – jejich počet odpovídá oblačnosti a plují směrem a rychlostí skutečného větru.","Na pozadí prší, sněží, padají kroupy, válí se mlha a při bouřce se blýská (při omezeném pohybu v systému zůstane obrázek nehybný)."]},
   {v:"1.39",d:"3. 10. 2026",c:["Ikona vypadá na iPhonu i na Androidu stejně – sluníčko s mráčkem má všude stejnou velikost."]},
   {v:"1.38",d:"3. 10. 2026",c:["Nová ikona aplikace – sluníčko s mráčkem na modré obloze. Na iPhonu se na ploše objeví až po novém přidání appky na plochu."]},
   {v:"1.37",d:"2. 10. 2026",c:["Meteomapa se po otevření sama rozběhne – radar přehrává pohyb srážek za poslední hodinu, ostatní vrstvy předpověď."]},
@@ -711,7 +681,7 @@ const WD=['ne','po','út','st','čt','pá','so'];
 /* "teď" v místě předpovědi vyjádřené jako lokální Date (čteme přes UTC gettery, aby se offset nezapočítal dvakrát) */
 function nowAtLoc(offMs){const u=new Date(Date.now()+offMs);return new Date(u.getUTCFullYear(),u.getUTCMonth(),u.getUTCDate(),u.getUTCHours(),u.getUTCMinutes(),u.getUTCSeconds());}
 function nextDayStr(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).toDateString();}
-function buildHourly(j){const H=j.hourly,times=H.time;tzOffsetMs=(j.utc_offset_seconds??0)*1000;const nowLoc=nowAtLoc(tzOffsetMs),today=nowLoc.toDateString(),tomorrowLoc=nextDayStr(nowLoc);let start=times.findIndex(t=>parseLocal(t)>=new Date(nowLoc.getTime()-3600000));if(start<0)start=0;const data=[];for(let i=start;i<start+48&&i<times.length;i++){const dt=parseLocal(times[i]);const dayLabel=dt.toDateString()===today?"dnes":dt.toDateString()===tomorrowLoc?"zítra":WD[dt.getDay()];data.push({hour:fmtHour(dt),h:dt.getHours(),dayLabel,dateLabel:fmtDate(dt),mp:moonPhase(new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate(),dt.getHours(),dt.getMinutes())-tzOffsetMs)).phase,mm:Math.max(0,H.precipitation[i]??0),prob:H.precipitation_probability[i]??0,temp:H.temperature_2m[i]??0,feels:H.apparent_temperature?.[i]??H.temperature_2m[i]??0,hum:H.relativehumidity_2m?.[i]??null,uv:H.uv_index?.[i]??null,wind:(H.windspeed_10m?.[i]??0)*KMH2MS,gust:(H.windgusts_10m?.[i]??0)*KMH2MS,dir:H.winddirection_10m?.[i]??0,code:H.weathercode?.[i]??0,day:(H.is_day?.[i]??1)===1});}hourlyData=data;}
+function buildHourly(j){const H=j.hourly,times=H.time;tzOffsetMs=(j.utc_offset_seconds??0)*1000;const nowLoc=nowAtLoc(tzOffsetMs),today=nowLoc.toDateString(),tomorrowLoc=nextDayStr(nowLoc);let start=times.findIndex(t=>parseLocal(t)>=new Date(nowLoc.getTime()-3600000));if(start<0)start=0;const data=[];for(let i=start;i<start+48&&i<times.length;i++){const dt=parseLocal(times[i]);const dayLabel=dt.toDateString()===today?"dnes":dt.toDateString()===tomorrowLoc?"zítra":WD[dt.getDay()];data.push({hour:fmtHour(dt),h:dt.getHours(),dayLabel,dateLabel:fmtDate(dt),mp:moonPhase(new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate(),dt.getHours(),dt.getMinutes())-tzOffsetMs)).phase,mm:Math.max(0,H.precipitation[i]??0),prob:H.precipitation_probability[i]??0,temp:H.temperature_2m[i]??0,feels:H.apparent_temperature?.[i]??H.temperature_2m[i]??0,hum:H.relativehumidity_2m?.[i]??null,uv:H.uv_index?.[i]??null,wind:(H.windspeed_10m?.[i]??0)*KMH2MS,gust:(H.windgusts_10m?.[i]??0)*KMH2MS,dir:H.winddirection_10m?.[i]??0,code:H.weathercode?.[i]??0,cc:H.cloud_cover?.[i]??null,day:(H.is_day?.[i]??1)===1});}hourlyData=data;}
 /* úhrn srážek za uplynulých 24 h (hodinová hodnota = úhrn za předchozí hodinu) */
 function buildPast24(j){
   const H=j.hourly;if(!H||!H.time){past24mm=null;return;}
@@ -721,7 +691,7 @@ function buildPast24(j){
   past24mm=n?sum:null;
 }
 function buildDaily(j){const D=j.daily,nowLoc=nowAtLoc((j.utc_offset_seconds??0)*1000),today=nowLoc.toDateString(),tomorrowLoc=nextDayStr(nowLoc);const data=[];const todayMid=new Date(nowLoc.getFullYear(),nowLoc.getMonth(),nowLoc.getDate());for(let i=0;i<D.time.length;i++){const dt=parseLocal(D.time[i]+"T12:00");if(dt<todayMid)continue;const dayLabel=dt.toDateString()===today?"dnes":dt.toDateString()===tomorrowLoc?"zítra":WD[dt.getDay()];data.push({date:dt,dayLabel,dateLabel:fmtDate(dt),mm:Math.max(0,D.precipitation_sum[i]??0),prob:D.precipitation_probability_max?.[i]??0,tMax:D.temperature_2m_max[i]??0,tMin:D.temperature_2m_min[i]??0,wind:(D.windspeed_10m_max?.[i]??0)*KMH2MS,gust:(D.windgusts_10m_max?.[i]??0)*KMH2MS,dir:D.winddirection_10m_dominant?.[i]??0,code:D.weathercode?.[i]??0,sunrise:D.sunrise?.[i]?fmtHour(parseLocal(D.sunrise[i])):null,sunset:D.sunset?.[i]?fmtHour(parseLocal(D.sunset[i])):null});}dailyData=data;}
-function fillNow(){if(!hourlyData||!hourlyData[0])return;const c=hourlyData[0],td=dailyData&&dailyData[0];$("nowIcon").innerHTML=wIcon(c.code,c.day,30,30,52,c.mp);$("nowTemp").textContent=Math.round(c.temp)+"°C";$("nowDesc").textContent=wmoDesc(c.code)+" · vítr "+c.wind.toFixed(1)+" m/s";$("nowMeta").innerHTML=`pocitově <b>${Math.round(c.feels)}°</b>`+(td?` · dnes <b>${Math.round(td.tMin)}°</b> / <b>${Math.round(td.tMax)}°</b>`:'');let ex='';if(td&&td.sunrise)ex+=`<span>východ <b>${td.sunrise}</b></span>`;if(td&&td.sunset)ex+=`<span>západ <b>${td.sunset}</b></span>`;if(c.hum!=null)ex+=`<span>vlhkost <b>${Math.round(c.hum)} %</b></span>`;if(c.uv!=null)ex+=`<span>UV <b>${Math.round(c.uv)}</b></span>`;const mo=moonInfo();ex+=`<span class="moonchip"><svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">${moonDisc(10,10,7.5,mo.phase,isSouth())}</svg>${mo.name} <b>${mo.pct} %</b> · ${mo.nextName} <b>${mo.nextDate}</b></span>`;$("nowExtra").innerHTML=ex;$("nowExtra").style.display=ex?'flex':'none';buildAdvisories();applyWeatherBg(c.code,c.day);}
+function fillNow(){if(!hourlyData||!hourlyData[0])return;const c=hourlyData[0],td=dailyData&&dailyData[0];$("nowIcon").innerHTML=wIcon(c.code,c.day,30,30,52,c.mp);$("nowTemp").textContent=Math.round(c.temp)+"°C";$("nowDesc").textContent=wmoDesc(c.code)+" · vítr "+c.wind.toFixed(1)+" m/s";$("nowMeta").innerHTML=`pocitově <b>${Math.round(c.feels)}°</b>`+(td?` · dnes <b>${Math.round(td.tMin)}°</b> / <b>${Math.round(td.tMax)}°</b>`:'');let ex='';if(td&&td.sunrise)ex+=`<span>východ <b>${td.sunrise}</b></span>`;if(td&&td.sunset)ex+=`<span>západ <b>${td.sunset}</b></span>`;if(c.hum!=null)ex+=`<span>vlhkost <b>${Math.round(c.hum)} %</b></span>`;if(c.uv!=null)ex+=`<span>UV <b>${Math.round(c.uv)}</b></span>`;const mo=moonInfo();ex+=`<span class="moonchip"><svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">${moonDisc(10,10,7.5,mo.phase,isSouth())}</svg>${mo.name} <b>${mo.pct} %</b> · ${mo.nextName} <b>${mo.nextDate}</b></span>`;$("nowExtra").innerHTML=ex;$("nowExtra").style.display=ex?'flex':'none';buildAdvisories();applyWeatherBg(c,td);}
 
 /* dynamické pozadí dle počasí + den/noc — mění jen barevné „záře", základ kvůli čitelnosti zůstává */
 function weatherCat(code){
@@ -746,23 +716,265 @@ const ATM={
   storm_day:['rgba(112,82,202,.24)','rgba(150,92,210,.14)','rgba(52,42,92,.32)'],
   storm_night:['rgba(92,66,182,.22)','rgba(120,78,196,.14)','rgba(38,30,72,.36)']
 };
-/* mraky na pozadí podle počasí: hustota (mul) a odstín spodku (bot); za jasna je obloha úplně čistá */
-const CLOUD_SKY={
-  clear:{mul:0,bot:{day:'#a8c2e4',night:'#5d739a'}},
-  cloud:{mul:1,bot:{day:'#93aecf',night:'#6d84ab'}},
-  fog:{mul:.85,bot:{day:'#a6b1c2',night:'#6b7488'}},
-  rain:{mul:1.15,bot:{day:'#7e97b8',night:'#556a8f'}},
-  snow:{mul:1.1,bot:{day:'#c3d7ee',night:'#8199bd'}},
-  storm:{mul:1.3,bot:{day:'#6d7d9c',night:'#485573'}}
-};
-function applyWeatherBg(code,isDay){
-  const cat=weatherCat(code), p=ATM[cat+(isDay?'_day':'_night')]||ATM.clear_day, r=document.documentElement.style;
+function applyWeatherBg(c,td){
+  const cat=weatherCat(c.code), p=ATM[cat+(c.day?'_day':'_night')]||ATM.clear_day, r=document.documentElement.style;
   r.setProperty('--atm1',p[0]);r.setProperty('--atm2',p[1]);r.setProperty('--atm3',p[2]);
-  const c=CLOUD_SKY[cat]||CLOUD_SKY.cloud;
-  r.setProperty('--cloud-mul',(c.mul*(isDay?1:.78)).toFixed(2));
-  r.setProperty('--cloud-bot',c.bot[isDay?'day':'night']);
   document.documentElement.setAttribute('data-sky',cat);
+  Sky.set({code:c.code,day:c.day,cover:c.cc,wind:c.wind,dir:c.dir,rise:td&&td.sunrise,set:td&&td.sunset});
 }
+
+/* živé pozadí (canvas #sky) — obloha podle aktuálního počasí: slunce putuje po obloze mezi východem a západem,
+   v noci hvězdy a Měsíc v aktuální fázi, mraky podle oblačnosti plují směrem a rychlostí skutečného větru,
+   déšť a sníh podle intenzity, kroupy, mlha a blesky. Mraky se předkreslí jednou do spritů, za běhu se jen
+   posouvají (≈30 snímků/s, v pozadí stojí). Při omezeném pohybu v systému se nakreslí jen nehybný obrázek. */
+const Sky=(()=>{
+  const cv=$("sky"), ctx=cv.getContext('2d'), RM=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const rnd=(a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), TAU=2*Math.PI;
+  const mix=(a,b,t)=>{const x=hex2rgb(a),y=hex2rgb(b);return rgb2hex(x.map((v,i)=>v+(y[i]-v)*t));};
+  const rgba=(h,a)=>{const c=hex2rgb(h);return `rgba(${c[0]},${c[1]},${c[2]},${a})`;};
+  const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+  let W=0,H=0,DPR=1,inp=null,key='',cur=null,old=null,raf=0,last=0;
+
+  /* druh oblohy podle kódu WMO */
+  function kind(code){
+    if(code===0)return'clear';if(code===1||code===2)return'fair';if(code===3)return'over';
+    if(code===45||code===48)return'fog';if(code>=95)return'storm';
+    if((code>=71&&code<=77)||code===85||code===86)return'snow';
+    if((code>=51&&code<=67)||(code>=80&&code<=82))return'rain';
+    return'over';
+  }
+  /* barvy mraků [osvětlená strana, stín, krytí] pro tmavý a světlý motiv */
+  const CPAL={
+    fair:[['#e9effa','#8a9fc2',.5],['#ffffff','#a6bbd8',.85]],
+    over:[['#cdd7e8','#6f809e',.5],['#f3f6fa','#95a7c1',.85]],
+    rain:[['#aab7cd','#4b5a76',.58],['#e1e7ef','#7a8aa4',.88]],
+    storm:[['#9d9eb9','#34364f',.62],['#d2d3e1','#62658a',.9]],
+    snow:[['#eef3fb','#9cafcb',.52],['#ffffff','#b3c4dc',.88]],
+    fog:[['#c9d0dc','#86909f',.42],['#f2f4f8','#a7b1c1',.82]]
+  };
+  function cloudPal(s){
+    const [lit,sh,a]=CPAL[s.ck==='clear'?'fair':s.ck][s.light?1:0];
+    if(s.day)return{lit,sh,a};
+    return s.light?{lit:mix(lit,'#c3cde0',.35),sh:mix(sh,'#66769a',.35),a}
+                  :{lit:mix(lit,'#27324d',.5),sh:mix(sh,'#121a2b',.45),a:a*.9};
+  }
+
+  /* kupovitý mrak: plochá základna + boule nahoře (silueta rozmazaná do měkka), pak barva shora dolů
+     a u každé boule světlo zleva shora a stín v záhybu pod ní; flat = nízká vrstevnatá oblačnost */
+  function cloudSprite(p,flat){
+    const w=480,h=270,c=mk(w,h),g=c.getContext('2d'),t=mk(w,h),q=t.getContext('2d');
+    const base=h*.84,x0=w*rnd(.1,.16),x1=w*rnd(.84,.9),bh=h*(flat?.2:.16),bumps=[];
+    const n=flat?Math.round(rnd(5,7)):Math.round(rnd(3,5));
+    for(let i=0;i<n;i++){const u=(i+.5)/n+rnd(-.05,.05),e=Math.pow(Math.sin(Math.PI*u),.7),r=h*(flat?.1+.07*e:.12+.17*e)*rnd(.85,1.12);
+      bumps.push({x:x0+(x1-x0)*u,y:base-bh-r*(flat?.1:.3)+rnd(-4,4),r});}
+    if(!flat){const u=rnd(.35,.6),r=h*rnd(.16,.21);bumps.push({x:x0+(x1-x0)*u,y:base-bh-h*rnd(.26,.32),r});}
+    q.fillStyle='#fff';q.beginPath();q.arc(x0+bh/2,base-bh/2,bh/2,0,TAU);q.arc(x1-bh/2,base-bh/2,bh/2,0,TAU);q.fill();q.fillRect(x0+bh/2,base-bh,x1-x0-bh,bh);
+    for(const b of bumps){q.beginPath();q.arc(b.x,b.y,b.r,0,TAU);q.fill();}
+    q.globalCompositeOperation='destination-out';q.fillRect(0,base,w,h);
+    if('filter' in g)g.filter='blur(3px)';g.drawImage(t,0,0);g.filter='none';
+    g.globalCompositeOperation='source-atop';
+    const y0=Math.min(...bumps.map(b=>b.y-b.r));
+    let gr=g.createLinearGradient(0,y0,0,base);gr.addColorStop(0,p.lit);gr.addColorStop(.6,mix(p.lit,p.sh,.4));gr.addColorStop(1,p.sh);g.fillStyle=gr;g.fillRect(0,0,w,h);
+    bumps.sort((a,b)=>b.y-a.y);
+    for(const b of bumps){
+      let s=g.createRadialGradient(b.x+b.r*.15,b.y+b.r*.8,0,b.x+b.r*.15,b.y+b.r*.8,b.r*.9);s.addColorStop(0,rgba(p.sh,.32));s.addColorStop(1,rgba(p.sh,0));g.fillStyle=s;g.fillRect(0,0,w,h);
+      s=g.createRadialGradient(b.x-b.r*.3,b.y-b.r*.45,0,b.x-b.r*.3,b.y-b.r*.45,b.r*1.05);s.addColorStop(0,rgba(p.lit,.75));s.addColorStop(.6,rgba(p.lit,.2));s.addColorStop(1,rgba(p.lit,0));g.fillStyle=s;g.fillRect(0,0,w,h);
+    }
+    gr=g.createLinearGradient(0,base-bh,0,base);gr.addColorStop(0,rgba(p.sh,0));gr.addColorStop(1,rgba(p.sh,.45));g.fillStyle=gr;g.fillRect(0,base-bh,w,bh);
+    return c;
+  }
+  /* slunce se září; ráno a večer (warm → 1) do oranžova */
+  function sunSprite(warm,light,pale){
+    const S=256,c=mk(S,S),g=c.getContext('2d'),m=S/2,R=S*.11;
+    if(pale){const gr=g.createRadialGradient(m,m,R*.6,m,m,R*2.4);gr.addColorStop(0,'rgba(255,250,235,.5)');gr.addColorStop(1,'rgba(255,250,235,0)');g.fillStyle=gr;g.fillRect(0,0,S,S);
+      g.fillStyle=light?'#fffdf4':'#f3efe2';g.beginPath();g.arc(m,m,R,0,TAU);g.fill();return c;}
+    let gr=g.createRadialGradient(m,m,0,m,m,m);
+    gr.addColorStop(0,rgba(mix('#ffeaa8','#ffc890',warm),light?.6:.5));gr.addColorStop(.3,rgba(mix('#ffcf6a','#ff9e5e',warm),light?.22:.14));gr.addColorStop(1,'rgba(255,200,120,0)');
+    g.fillStyle=gr;g.fillRect(0,0,S,S);
+    gr=g.createRadialGradient(m-R*.3,m-R*.35,0,m,m,R);gr.addColorStop(0,mix('#fff3c4','#ffd2a0',warm));gr.addColorStop(.55,mix('#ffd24a','#ff9a3c',warm));gr.addColorStop(1,mix('#ffab2e','#f2662a',warm));
+    g.fillStyle=gr;g.beginPath();g.arc(m,m,R,0,TAU);g.fill();
+    return c;
+  }
+  function raySprite(light){
+    const S=512,c=mk(S,S),g=c.getContext('2d'),m=S/2;g.translate(m,m);
+    for(let i=0;i<16;i++){g.rotate(Math.PI/8);const len=m*(i%2?.62:.9),wd=i%2?16:24,gr=g.createLinearGradient(0,0,len,0);
+      gr.addColorStop(0,`rgba(255,226,140,${light?.16:.1})`);gr.addColorStop(.4,`rgba(255,226,140,${light?.07:.045})`);gr.addColorStop(1,'rgba(255,226,140,0)');
+      g.fillStyle=gr;g.beginPath();g.moveTo(0,-wd);g.lineTo(len,0);g.lineTo(0,wd);g.closePath();g.fill();}
+    return c;
+  }
+  /* Měsíc ve fázi p (stejná geometrie jako moonDisc) s popelavým svitem a měsíčními moři; na jižní polokouli otočený */
+  const MARIA=[[-.32,-.28,.26,.22],[.2,-.3,.18,.15],[.34,.02,.2,.17],[-.48,.16,.2,.3],[.06,.36,.15,.12],[-.08,-.04,.13,.11]];
+  function moonSprite(p,south,light){
+    const S=200,c=mk(S,S),g=c.getContext('2d'),m=S/2,R=S*.2,cs=Math.cos(TAU*p),side=(p<.5?1:-1)*(south?-1:1),lit=(1-cs)/2;
+    let gr=g.createRadialGradient(m,m,R*.9,m,m,m);gr.addColorStop(0,`rgba(214,226,255,${(light?.25:.22)*(.25+lit)})`);gr.addColorStop(1,'rgba(214,226,255,0)');g.fillStyle=gr;g.fillRect(0,0,S,S);
+    g.fillStyle=light?'rgba(90,106,142,.12)':'rgba(150,168,210,.13)';g.beginPath();g.arc(m,m,R,0,TAU);g.fill();
+    g.save();g.beginPath();g.arc(m,m,R,-Math.PI/2,Math.PI/2,side<0);
+    g.ellipse(m,m,Math.max(Math.abs(cs)*R,.01),R,0,Math.PI/2,-Math.PI/2,cs>0?side>0:side<0);g.closePath();g.clip();
+    gr=g.createRadialGradient(m-R*.3,m-R*.3,0,m,m,R*1.05);gr.addColorStop(0,light?'#ffffff':'#fbfdff');gr.addColorStop(1,light?'#e1e8f4':'#cfd9ec');g.fillStyle=gr;g.fillRect(0,0,S,S);
+    const k=south?-1:1;
+    for(const [x,y,a,b] of MARIA){const cx=m+k*x*R,cy=m+k*y*R,mg=g.createRadialGradient(cx,cy,0,cx,cy,Math.max(a,b)*R*1.2);mg.addColorStop(0,'rgba(118,134,168,.26)');mg.addColorStop(.7,'rgba(118,134,168,.14)');mg.addColorStop(1,'rgba(118,134,168,0)');
+      g.fillStyle=mg;g.beginPath();g.ellipse(cx,cy,a*R*1.2,b*R*1.2,0,0,TAU);g.fill();}
+    g.restore();
+    if(light){g.strokeStyle='rgba(70,90,130,.45)';g.lineWidth=R*.06;g.beginPath();g.arc(m,m,R,0,TAU);g.stroke();}
+    return c;
+  }
+  function flakeSprite(light){
+    const c=mk(32,32),g=c.getContext('2d'),gr=g.createRadialGradient(16,16,0,16,16,16);
+    gr.addColorStop(0,'#fff');gr.addColorStop(.35,'rgba(255,255,255,.92)');
+    if(light){gr.addColorStop(.55,'rgba(150,170,205,.3)');gr.addColorStop(1,'rgba(150,170,205,0)');}else gr.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=gr;g.fillRect(0,0,32,32);return c;
+  }
+  function fogSprite(col){
+    const c=mk(512,128),g=c.getContext('2d');g.setTransform(4,0,0,1,0,0);
+    const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,rgba(col,.9));gr.addColorStop(.5,rgba(col,.45));gr.addColorStop(1,rgba(col,0));
+    g.fillStyle=gr;g.fillRect(0,0,128,128);return c;
+  }
+  const strat=n=>{const a=[...Array(n)].map((_,i)=>(i+rnd(.15,.85))/n);for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+  /* hustota srážek na 1 Mpx obrazovky podle kódu WMO */
+  const DRIZ={51:60,53:100,55:150,56:70,57:120}, RAIN={61:160,63:280,65:420,66:160,67:300,80:200,81:320,82:460,95:340,96:380,99:460}, SNOW={71:120,73:220,75:340,77:150,85:180,86:320};
+
+  function build(s){
+    const sc={s,a:0,clouds:[],spr:[],drops:[],flakes:[],stars:[],banks:[],flash:null,next:performance.now()+rnd(2500,6000),shoot:null,nextShoot:performance.now()+rnd(5000,15000)};
+    const area=W*H/1e6, U=clamp(Math.min(W,H)*.78,260,560), ck=s.ck, heavy=ck==='over'||ck==='rain'||ck==='storm'||ck==='snow';
+    /* oblačnost z modelu (cloud_cover), jinak odhad z kódu; za jasna (kód 0) obloha úplně čistá */
+    let cover=s.cover!=null?s.cover:({1:20,2:55,3:95})[s.code]??100;
+    cover=ck==='clear'||ck==='fog'?0:s.code===1?clamp(cover,10,35):s.code===2?clamp(cover,35,70):Math.max(cover,85);
+    let N=Math.round(cover/100*clamp(W/42,8,30)*(heavy?1.5:1));if(s.code===1)N=Math.max(N,1);if(s.code===2)N=Math.max(N,3);
+    const pal=cloudPal(s);sc.pal=pal;
+    for(let i=0;i<Math.min(N,6);i++)sc.spr.push(cloudSprite(pal,heavy&&i%3!==0));
+    const ys=strat(N),xs=strat(N),yT=heavy?-.08:.02,yB=heavy?.62:.78;
+    for(let i=0;i<N;i++){const d=i%3,w=[.36,.62,1][d]*U*(heavy?1.2:1)*rnd(.85,1.15),h=w*270/480;
+      sc.clouds.push({k:i%sc.spr.length,d,w,h,x:-.2*W+1.2*W*xs[i]-w/2,y:H*(yT+(yB-yT)*ys[i])-h/2,a:pal.a*[.55,.8,1][d],v:(4+s.wind*1.6)*s.sp*[.35,.65,1][d]*rnd(.85,1.15),bw:rnd(.15,.3),ph:rnd(0,TAU)});}
+    sc.clouds.sort((a,b)=>a.d-b.d);
+    sc.deck={over:.24,rain:.3,storm:.36,snow:.22}[ck]||0;
+    /* hvězdy jen v tmavém motivu — na světlé obloze by byly jen šedé tečky */
+    if(!s.day&&!s.light&&(ck==='clear'||ck==='fair')){
+      const n=Math.round(area*450*(ck==='fair'?.6:1));
+      for(let i=0;i<n;i++){const big=Math.random()<.08;sc.stars.push({x:rnd(0,W),y:H*.8*Math.pow(Math.random(),1.25),r:big?rnd(1.2,1.8):rnd(.5,1.1),a:rnd(.35,.95),tw:rnd(.5,2.4),ph:rnd(0,TAU),c:Math.random()<.2?'#fff1d6':'#e6eeff'});}
+    }
+    if(ck==='clear'||ck==='fair'||ck==='fog'){
+      const a=ck==='fog'?.35:1;
+      if(s.day)sc.sun={a,spr:sunSprite(s.warm,s.light,ck==='fog'),rays:ck==='fog'?null:raySprite(s.light)};
+      else sc.moon={a,spr:moonSprite(s.phase,s.south,s.light)};
+    }
+    if(ck==='fog'){
+      const col=s.light?'#f4f6f9':(s.day?'#aab3c2':'#6c7588');sc.fogSpr=fogSprite(col);sc.fogCol=col;
+      for(let i=0,n=6+Math.round(W/300);i<n;i++)sc.banks.push({x:rnd(-.4*W,W),y:H*rnd(.15,1),w:rnd(.9,1.6)*Math.max(W,500),h:rnd(90,170),v:rnd(3,8),a:rnd(.35,.7)});
+    }
+    const drizzle=s.code in DRIZ, nr=Math.round((DRIZ[s.code]||RAIN[s.code]||0)*area), hail=s.code===96||s.code===99;
+    for(let i=0;i<nr;i++){const d=rnd(.3,1);sc.drops.push({x:rnd(-.2*W,1.2*W),y:rnd(-.1*H,H),b:d<.55?0:d<.8?1:2,v:drizzle?380+260*d:560+520*d,len:drizzle?5+7*d:9+17*d,hail:hail&&Math.random()<.25,r:rnd(1.2,2.4)});}
+    const grains=s.code===77, nf=Math.round((SNOW[s.code]||0)*area);
+    if(nf)sc.flakeSpr=flakeSprite(s.light);
+    for(let i=0;i<nf;i++){const d=rnd(.3,1);sc.flakes.push({x:rnd(0,W),y:rnd(-.05*H,H),r:(.8+2.6*d)*(grains?.6:1),v:grains?60+80*d:22+48*d,amp:rnd(6,22)*d,w:rnd(.6,1.6),ph:rnd(0,TAU),a:.45+.5*d,dx:clamp(s.windX*3*d,-60,60)});}
+    return sc;
+  }
+
+  function sunPos(s){
+    let f=.5;
+    if(s.rise!=null&&s.set!=null&&s.set>s.rise){const n=nowAtLoc(tzOffsetMs);f=clamp((n.getHours()*60+n.getMinutes()-s.rise)/(s.set-s.rise),0,1);}
+    /* na jižní polokouli jde slunce přes sever, tedy zprava doleva */
+    return {x:W*(s.south?.9-.8*f:.1+.8*f),y:H*(.07+.17*(1-Math.sin(Math.PI*f)))};
+  }
+  function makeBolt(){
+    let x=rnd(.15,.85)*W,y=rnd(.03,.12)*H;const y1=rnd(.35,.6)*H,main=[[x,y]],all=[main];
+    while(y<y1){x+=rnd(-20,20);y+=rnd(16,32);main.push([x,y]);
+      if(Math.random()<.22){const b=[[x,y]],dir=Math.random()<.5?-1:1;let bx=x,by=y;for(let k=0,n=Math.round(rnd(3,6));k<n;k++){bx+=dir*rnd(8,22);by+=rnd(12,24);b.push([bx,by]);}all.push(b);}}
+    return all;
+  }
+
+  function step(sc,dt,t){
+    const s=sc.s;
+    for(const c of sc.clouds){c.x+=s.dx*c.v*dt;
+      if(s.dx>0&&c.x>W+20){c.x=-c.w-rnd(0,.3*W);c.y=clamp(c.y+rnd(-.1,.1)*H,-.1*H,.8*H);}
+      else if(s.dx<0&&c.x+c.w<-20){c.x=W+rnd(0,.3*W);c.y=clamp(c.y+rnd(-.1,.1)*H,-.1*H,.8*H);}}
+    for(const b of sc.banks){b.x+=s.dx*b.v*dt;if(s.dx>0&&b.x>W)b.x=-b.w;else if(s.dx<0&&b.x+b.w<0)b.x=W;}
+    for(const d of sc.drops){d.y+=d.v*dt;d.x+=d.v*s.slant*dt;if(d.y>H+d.len){d.y=-rnd(0,60);d.x=rnd(-.2*W,1.2*W);}}
+    for(const f of sc.flakes){f.y+=f.v*dt;f.x+=f.dx*dt;if(f.y>H+8){f.y=-rnd(4,40);f.x=rnd(0,W);}if(f.x<-30)f.x+=W+60;else if(f.x>W+30)f.x-=W+60;}
+    if(s.ck==='storm'&&t>sc.next){sc.flash={t0:t,bolt:Math.random()<.6?makeBolt():null};sc.next=t+rnd(4500,11000);}
+    if(sc.stars.length&&s.ck==='clear'&&t>sc.nextShoot){const dir=Math.random()<.5?-1:1;sc.shoot={t0:t,x:rnd(.15,.85)*W,y:rnd(.05,.3)*H,vx:dir*rnd(420,620),vy:rnd(160,280)};sc.nextShoot=t+rnd(14000,32000);}
+  }
+
+  function drawScene(sc,A,t){
+    const s=sc.s,ts=t/1000;
+    for(const st of sc.stars){ctx.globalAlpha=A*st.a*(.55+.45*Math.sin(ts*st.tw+st.ph));ctx.fillStyle=st.c;
+      if(st.r<1)ctx.fillRect(st.x,st.y,st.r*1.6,st.r*1.6);else{ctx.beginPath();ctx.arc(st.x,st.y,st.r,0,TAU);ctx.fill();}}
+    if(sc.shoot){const e=(t-sc.shoot.t0)/1000;if(e>.9)sc.shoot=null;else{const p=sc.shoot,x=p.x+p.vx*e,y=p.y+p.vy*e,k=.22,
+      gr=ctx.createLinearGradient(x,y,x-p.vx*k,y-p.vy*k);gr.addColorStop(0,'rgba(255,255,255,.9)');gr.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.globalAlpha=A*Math.sin(Math.PI*e/.9);ctx.strokeStyle=gr;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-p.vx*k,y-p.vy*k);ctx.stroke();}}
+    if(sc.sun){const p=sunPos(s),R=clamp(Math.min(W,H)*.05,20,40),S=R/.11;
+      if(sc.sun.rays){const RS=R*13;ctx.save();ctx.globalAlpha=A*sc.sun.a;ctx.translate(p.x,p.y);ctx.rotate(ts*.04);ctx.drawImage(sc.sun.rays,-RS/2,-RS/2,RS,RS);ctx.restore();}
+      ctx.globalAlpha=A*sc.sun.a;ctx.drawImage(sc.sun.spr,p.x-S/2,p.y-S/2,S,S);}
+    if(sc.moon){const R=clamp(Math.min(W,H)*.055,20,34),S=R/.2,x=W>900?W-(W-720)/4:W*.72,y=clamp(H*.11,56,120);
+      ctx.globalAlpha=A*sc.moon.a;ctx.drawImage(sc.moon.spr,x-S/2,y-S/2,S,S);}
+    let deck=!sc.deck;
+    for(const c of sc.clouds){
+      if(!deck&&c.d===2){drawDeck(sc,A);deck=true;}
+      ctx.globalAlpha=A*c.a;ctx.drawImage(sc.spr[c.k],c.x,c.y+Math.sin(ts*c.bw+c.ph)*3,c.w,c.h);}
+    if(!deck)drawDeck(sc,A);
+    if(sc.banks.length){
+      const gr=ctx.createLinearGradient(0,H*.25,0,H);gr.addColorStop(0,rgba(sc.fogCol,0));gr.addColorStop(1,rgba(sc.fogCol,s.light?.5:.3));
+      ctx.globalAlpha=A;ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+      for(const b of sc.banks){ctx.globalAlpha=A*b.a*(s.light?.9:.55);ctx.drawImage(sc.fogSpr,b.x,b.y-b.h/2,b.w,b.h);}}
+    if(sc.drops.length){
+      ctx.lineCap='round';ctx.strokeStyle=s.light?'#4f6f9e':'#b4c8ee';
+      for(let b=0;b<3;b++){ctx.beginPath();
+        for(const d of sc.drops)if(d.b===b&&!d.hail){ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-d.len*s.slant,d.y-d.len);}
+        ctx.globalAlpha=A*(s.light?[.25,.35,.5]:[.25,.38,.55])[b];ctx.lineWidth=[.8,1.1,1.5][b];ctx.stroke();}
+      ctx.fillStyle=s.light?'#ffffff':'#eef4ff';ctx.strokeStyle='rgba(90,110,150,.5)';ctx.lineWidth=.8;ctx.globalAlpha=A*.85;
+      for(const d of sc.drops)if(d.hail){ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,TAU);ctx.fill();if(s.light)ctx.stroke();}}
+    for(const f of sc.flakes){const x=f.x+Math.sin(ts*f.w+f.ph)*f.amp,r=f.r*2;ctx.globalAlpha=A*f.a;ctx.drawImage(sc.flakeSpr,x-r,f.y-r,2*r,2*r);}
+    if(sc.flash){const e=t-sc.flash.t0;
+      if(e>700)sc.flash=null;
+      else{const I=Math.max(Math.exp(-e/90),e>200?.7*Math.exp(-(e-200)/120):0);
+        if(sc.flash.bolt&&e<300){ctx.save();ctx.globalAlpha=A*Math.min(1,I*1.4);ctx.strokeStyle=s.light?'#ffffff':'#f0f4ff';ctx.shadowColor=s.light?'#4a5fa8':'#a8bcff';ctx.shadowBlur=s.light?8:12;ctx.lineJoin='round';
+          sc.flash.bolt.forEach((l,i)=>{ctx.lineWidth=i?1.2:2.4;ctx.beginPath();l.forEach(([x,y],j)=>j?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();});ctx.restore();}
+        ctx.globalAlpha=A*I*(s.light?.22:.13);ctx.fillStyle=s.light?'#ffffff':'#cdd6ff';ctx.fillRect(0,0,W,H);}}
+  }
+  /* zatažená obloha: souvislá vrstva oblačnosti u horního okraje */
+  function drawDeck(sc,A){
+    if(!sc.deck)return;const s=sc.s,col=mix(sc.pal.sh,sc.pal.lit,s.light?.3:.45),gr=ctx.createLinearGradient(0,0,0,H*.45);
+    gr.addColorStop(0,rgba(col,sc.deck*(s.light?.8:1)));gr.addColorStop(1,rgba(col,0));ctx.globalAlpha=A;ctx.fillStyle=gr;ctx.fillRect(0,0,W,H*.45);
+  }
+  function render(t){
+    ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
+    if(old)drawScene(old,old.a,t);if(cur)drawScene(cur,cur.a,t);ctx.globalAlpha=1;
+  }
+  function frame(t){
+    raf=0;if(document.hidden||RM.matches)return;
+    raf=requestAnimationFrame(frame);
+    if(last&&t-last<31)return;
+    const dt=last?Math.min(.1,(t-last)/1000):0;last=t;
+    if(old){step(old,dt,t);old.a-=dt/1.2;if(old.a<=0)old=null;}
+    if(cur){step(cur,dt,t);cur.a=Math.min(1,cur.a+dt/1.2);}
+    render(t);
+  }
+  function kick(){
+    if(RM.matches){if(cur)cur.a=1;old=null;render(performance.now());return;}
+    if(!raf){last=0;raf=requestAnimationFrame(frame);}
+  }
+  function measure(){
+    const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h||(w===W&&h===H))return false;
+    W=w;H=h;DPR=Math.min(window.devicePixelRatio||1,1.5);cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);return true;
+  }
+  const mins=h=>{const m=/^(\d+):(\d+)/.exec(h||'');return m?+m[1]*60+ +m[2]:null;};
+  function params(p){
+    const wind=p.wind||0,sx=-Math.sin((p.dir||0)*RAD),ck=kind(p.code),rise=mins(p.rise),set=mins(p.set);
+    let warm=0;if(p.day&&rise!=null&&set!=null&&set>rise){const n=nowAtLoc(tzOffsetMs),f=(n.getHours()*60+n.getMinutes()-rise)/(set-rise);warm=Math.round(clamp(1-Math.min(f,1-f)/.12,0,1)*4)/4;}
+    return {code:p.code,ck,day:!!p.day,light:theme==='light',cover:p.cover!=null?Math.round(p.cover/10)*10:null,
+      wind:Math.round(wind),dx:sx>=0?1:-1,sp:Math.max(.35,Math.abs(sx)),windX:Math.round(wind*sx),slant:clamp(Math.round(wind*sx)*.045,-.5,.5),
+      rise,set,warm,south:isSouth(),phase:Math.round(moonPhase(new Date()).phase*100)/100};
+  }
+  function set(p){
+    if(!p)return;inp=p;measure();if(!W)return;
+    const s=params(p),k=JSON.stringify(s);if(k===key)return;key=k;
+    const n=build(s);if(cur&&!RM.matches)old=cur;else n.a=1;cur=n;kick();
+  }
+  window.addEventListener('resize',()=>{if(measure()&&inp){key='';cur=null;old=null;set(inp);}});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(inp)set(inp);kick();}});
+  RM.addEventListener?.('change',kick);
+  return {set,refresh:()=>set(inp)};
+})();
 
 /* kontextové rady (deštník, UV, vítr, vedro, mráz, bouřka, mlha) */
 function advIcon(n){const p={
@@ -839,7 +1051,7 @@ async function resolveName(lat,lon){try{const r=await fetch(`https://api.bigdata
 async function fetchForecast(lat,lon){
   $("refIcon").style.animation="spin .9s linear infinite";
   try{
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation,precipitation_probability,temperature_2m,apparent_temperature,relativehumidity_2m,uv_index,windspeed_10m,windgusts_10m,winddirection_10m,weathercode,is_day&daily=precipitation_sum,precipitation_probability_max,temperature_2m_max,temperature_2m_min,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,weathercode,sunrise,sunset&forecast_days=14&past_days=1&timezone=auto`;
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation,precipitation_probability,temperature_2m,apparent_temperature,relativehumidity_2m,uv_index,windspeed_10m,windgusts_10m,winddirection_10m,weathercode,cloud_cover,is_day&daily=precipitation_sum,precipitation_probability_max,temperature_2m_max,temperature_2m_min,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,weathercode,sunrise,sunset&forecast_days=14&past_days=1&timezone=auto`;
     const res=await fetch(url);if(!res.ok)throw new Error("HTTP "+res.status);
     const j=await res.json();offline=false;lastFetchTs=Date.now();savePref('srk.cache',JSON.stringify({j,ts:lastFetchTs}));
     buildHourly(j);buildDaily(j);buildPast24(j);fillNow();renderCurrent();updateAge();
@@ -908,7 +1120,7 @@ $("seg").querySelectorAll('button').forEach(b=>{b.addEventListener('click',()=>{
 $("segMetric").querySelectorAll('button').forEach(b=>{b.addEventListener('click',()=>{metric=b.dataset.metric;$("segMetric").querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));savePref('srk.metric',metric);renderCurrent();});});
 
 function themeIcon(t){return t==='light'?`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`:`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`;}
-function applyTheme(t){theme=t;document.documentElement.setAttribute('data-theme',t);document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#e9f1fb':'#070b14');$("themeIcon").innerHTML=themeIcon(t);savePref('srk.theme',t);}
+function applyTheme(t){theme=t;document.documentElement.setAttribute('data-theme',t);document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#e9f1fb':'#070b14');$("themeIcon").innerHTML=themeIcon(t);savePref('srk.theme',t);Sky.refresh();}
 $("theme").addEventListener('click',()=>{applyTheme(theme==='light'?'dark':'light');if(hourlyData)renderCurrent();});
 
 function start(){fetchForecast(coords.lat,coords.lon);updateMap();clearInterval(timer);timer=setInterval(()=>fetchForecast(coords.lat,coords.lon),600000);}
