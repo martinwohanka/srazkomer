@@ -106,11 +106,15 @@ h1 span{background:linear-gradient(92deg,#46c8e8 10%,#3d8de0 90%);-webkit-backgr
 #segMetric button{display:inline-flex;align-items:center;gap:5px;padding:7px 10px}
 #segMetric button svg.ic{width:13px;height:13px;flex-shrink:0}
 .seg button.on{background:linear-gradient(135deg,#2f6fe0,#3da9c9);color:#fff;box-shadow:0 2px 12px rgba(61,169,201,.45), inset 0 1px 0 rgba(255,255,255,.18)}
-.segbar{display:inline-flex;align-items:center;gap:2px;flex-wrap:nowrap;width:max-content}
 .seggrp{display:inline-flex;gap:2px}
-/* přepínač rozsahu nahoře v panelu grafu — přes celou šířku, tři stejně široká tlačítka */
-.segrange{display:flex;width:100%;margin:-4px 0 14px;gap:3px}
-.segrange button{flex:1;padding:9px 6px;font-size:13px;letter-spacing:.2px}
+.seg-div{width:1px;align-self:stretch;margin:5px 6px;background:var(--glass-border)}
+/* lišta nad grafem přes celou šířku panelu: rozsah (tři stejně široká tlačítka) | srážky / vítr;
+   na nejužších displejích zůstanou u srážek a větru jen ikonky */
+.chartseg{display:flex;align-items:center;width:100%;margin:-4px 0 14px}
+.chartseg .segrange{flex:1;min-width:0}
+.segrange button{flex:1 1 0;min-width:0;padding:9px 3px;font-size:12px}
+.chartseg #segMetric button{gap:4px;padding:9px 7px;font-size:12px}
+@media (max-width:370px){.chartseg .mlbl{display:none}.chartseg #segMetric button{padding:9px 10px}}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
 .card{border-radius:18px;padding:15px 13px;background:linear-gradient(165deg,var(--card-bg1),var(--card-bg2));border:1px solid var(--card-border);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 26px rgba(0,0,0,.18), inset 0 1px 0 var(--hl)}
 .card .lbl{font-size:11.5px;letter-spacing:.4px;text-transform:uppercase;font-weight:600}
@@ -241,12 +245,6 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
       <div class="sug" id="sug" role="listbox" aria-label="nalezená města"></div>
     </div>
     <div class="favbar" id="favbar"></div>
-    <div class="seg segbar">
-      <span id="segMetric" class="seggrp">
-        <button data-metric="precip" class="on"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2.5s6.5 7.6 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.1 12 2.5 12 2.5Z"/></svg>srážky</button>
-        <button data-metric="wind"><svg class="ic" viewBox="0 0 24 24"><path d="M3 8h10a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h7a2.5 2.5 0 1 1-2.5 2.5"/></svg>vítr</button>
-      </span>
-    </div>
   </div>
 
   <div class="cards" id="cards">
@@ -262,10 +260,17 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
   </div>
 
   <div class="panel chartpanel">
-    <div class="seg segrange" id="seg" role="group" aria-label="časový rozsah předpovědi">
-      <button data-mode="24h">24 h</button>
-      <button data-mode="48h" class="on">48 h</button>
-      <button data-mode="7d">14 dní</button>
+    <div class="seg chartseg">
+      <span id="seg" class="seggrp segrange" role="group" aria-label="časový rozsah předpovědi">
+        <button data-mode="24h">24 h</button>
+        <button data-mode="48h" class="on">48 h</button>
+        <button data-mode="7d">14 dní</button>
+      </span>
+      <span class="seg-div"></span>
+      <span id="segMetric" class="seggrp" role="group" aria-label="co graf ukazuje">
+        <button data-metric="precip" class="on" title="srážky"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2.5s6.5 7.6 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.1 12 2.5 12 2.5Z"/></svg><span class="mlbl">srážky</span></button>
+        <button data-metric="wind" title="vítr"><svg class="ic" viewBox="0 0 24 24"><path d="M3 8h10a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h7a2.5 2.5 0 1 1-2.5 2.5"/></svg><span class="mlbl">vítr</span></button>
+      </span>
     </div>
     <div class="cap" id="cap">srážky mm/h · teplota °C — po hodinách</div>
     <svg id="chart" viewBox="0 0 360 260" height="260" preserveAspectRatio="xMidYMid meet"></svg>
@@ -314,9 +319,10 @@ svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;strok
 
 <script>
 const FALLBACK={lat:50.036,lon:14.194,name:"Drahelčice"};
-const VERSION="1.41", VERSION_DATE="11. 10. 2026";
+const VERSION="1.42", VERSION_DATE="11. 10. 2026";
 /* SEZNAM ZMĚN — nejnovější nahoře. Při každé nové verzi přidej nový záznam {v, d, c:[...]} a srovnej VERSION/VERSION_DATE. */
 const CHANGELOG=[
+  {v:"1.42",d:"11. 10. 2026",c:["Přepínač srážky / vítr se přesunul k grafu – oba přepínače jsou teď v jedné liště přímo nad ním."]},
   {v:"1.41",d:"11. 10. 2026",c:["Měsíc je na pozadí tam, kde na obloze skutečně je – vychází na východě, zapadá na západě, pod obzorem není vidět a za jasného dne ho jde zahlédnout i přes den. Osvětlenou stranou míří ke Slunci.","Slunce na pozadí stojí ve své skutečné výšce nad obzorem, takže v zimě chodí níž než v létě.","Přepínač 24 h / 48 h / 14 dní je nově přímo nad grafem, přes celou jeho šířku."]},
   {v:"1.40",d:"9. 10. 2026",c:["Pozadí appky ukazuje aktuální počasí: ve dne slunce, které putuje po obloze od východu k západu, v noci hvězdy a Měsíc v jeho skutečné fázi.","Hezčí, plastické mraky – jejich počet odpovídá oblačnosti a plují směrem a rychlostí skutečného větru.","Na pozadí prší, sněží, padají kroupy, válí se mlha a při bouřce se blýská (při omezeném pohybu v systému zůstane obrázek nehybný)."]},
   {v:"1.39",d:"3. 10. 2026",c:["Ikona vypadá na iPhonu i na Androidu stejně – sluníčko s mráčkem má všude stejnou velikost."]},
