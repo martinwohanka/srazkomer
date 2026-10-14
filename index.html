@@ -70,7 +70,8 @@ button{font:inherit;color:inherit}
    radial-gradient(80% 50% at 50% 100%,var(--atm3),transparent 72%),
    linear-gradient(180deg,var(--bg1),var(--bg2) 50%,var(--bg3));
   transition:--atm1 1.6s ease,--atm2 1.6s ease,--atm3 1.6s ease,--bg1 .5s,--bg2 .5s,--bg3 .5s}
-#sky{position:fixed;left:0;top:0;width:100vw;height:100lvh;z-index:1;pointer-events:none;display:block}
+#sky,#skyFg{position:fixed;left:0;top:0;width:100vw;height:100lvh;z-index:1;pointer-events:none;display:block}
+#skyFg{z-index:3} /* pár blízkých kapek deště před kartami */
 .wrap{position:relative;z-index:2;max-width:720px;margin:0 auto;
   padding:calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 22px) calc(env(safe-area-inset-left) + 14px)}
 .glass{background:linear-gradient(160deg,var(--g1),var(--g2));border:1px solid var(--gb);
@@ -237,6 +238,7 @@ footer .made b{color:var(--text);font-weight:500}
 </svg>
 <div class="atmo" aria-hidden="true"></div>
 <canvas id="sky" aria-hidden="true"></canvas>
+<canvas id="skyFg" aria-hidden="true"></canvas>
 
 <main class="wrap">
   <header class="top fade">
@@ -315,9 +317,12 @@ footer .made b{color:var(--text);font-weight:500}
 <script>
 'use strict';
 /* ================= verze ================= */
-const VERSION="2.0"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
+const VERSION="2.1"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
 const VERSION_DATE = "14. 10. 2026";
 const CHANGELOG = [
+  {v:"2.1", d:"14. 10. 2026", c:[
+    "Déšť na pozadí je výraznější – hustší, v několika vrstvách a pár blízkých kapek padá i přes karty."
+  ]},
   {v:"2.0", d:"14. 10. 2026", c:[
     "Grafické přepracování celé aplikace + změny funkčnosti"
   ]}
@@ -1439,11 +1444,17 @@ class Scene{
     const area = W*H/(430*900);
     this.drops = []; this.flakes = []; this.hail = [];
     let nRain = 0;
-    if(this.kind === 'drizzle') nRain = 70 + this.pmm*60;
-    else if(this.kind === 'rain' || this.kind === 'showers') nRain = 130 + this.pmm*45;
-    else if(this.kind === 'storm') nRain = 200 + this.pmm*40;
-    nRain = Math.round(Math.min(nRain, 420) * area);
-    for(let i=0;i<nRain;i++){ const z = 0.5 + rnd()*0.5; this.drops.push({ x:rnd()*(W+200)-100, y:rnd()*H, z, len:(this.kind==='drizzle'?7:13)*z + rnd()*5, vy:(this.kind==='drizzle'?520:980)*z }); }
+    if(this.kind === 'drizzle') nRain = 120 + this.pmm*90;
+    else if(this.kind === 'rain' || this.kind === 'showers') nRain = 220 + this.pmm*60;
+    else if(this.kind === 'storm') nRain = 300 + this.pmm*50;
+    nRain = Math.round(Math.min(nRain, 620) * area);
+    // tři hloubky (z): vzdálené kapky krátké, tenké a slabé, blízké delší, silnější a rychlejší
+    const dz = this.kind === 'drizzle';
+    for(let i=0;i<nRain;i++){ const z = 0.5 + rnd()*0.5; this.drops.push({ x:rnd()*(W+200)-100, y:rnd()*H, z, b: z < 0.67 ? 0 : z < 0.84 ? 1 : 2, len:(dz?9:20)*z + rnd()*(dz?4:8), vy:(dz?560:1050)*z }); }
+    // blízké kapky před kartami — málo, aby nerušily čtení
+    this.fgDrops = [];
+    const nFg = Math.round(nRain * (dz ? 0.06 : 0.12));
+    for(let i=0;i<nFg;i++){ const z = 1.05 + rnd()*0.3; this.fgDrops.push({ x:rnd()*(W+200)-100, y:rnd()*H, z, len:(dz?16:34)*z + rnd()*10, vy:(dz?700:1350)*z }); }
     if(this.kind === 'snow'){ const n = Math.round(130*area); for(let i=0;i<n;i++){ const z = 0.4 + rnd()*0.6; this.flakes.push({ x:rnd()*W, y:rnd()*H, r:1 + z*2.2, vy:30 + z*55, ph:rnd()*6.28, sw:8 + rnd()*14 }); } }
     if(this.code === 96 || this.code === 99){ const n = Math.round(45*area); for(let i=0;i<n;i++) this.hail.push({ x:rnd()*W, y:rnd()*H, r:1.4 + rnd()*1.6, vy:700 + rnd()*400 }); }
     // mlha
@@ -1487,7 +1498,7 @@ class Scene{
     this.t += dt;
     const W = this.W, H = this.H;
     for(const c of this.clouds){ c.x += this.cloudVx * c.sp2 * dt; if(this.cloudVx > 0 && c.x > W + 20) c.x = -c.w - 20; if(this.cloudVx < 0 && c.x + c.w < -20) c.x = W + 20; }
-    for(const d of this.drops){ d.y += d.vy*dt; d.x += d.vy*this.tanR*dt; if(d.y > H + 20){ d.y = -d.len - Math.random()*40; d.x = Math.random()*(W+240)-120; } if(d.x > W+120) d.x -= W+240; if(d.x < -120) d.x += W+240; }
+    for(const arr of [this.drops, this.fgDrops]) for(const d of arr){ d.y += d.vy*dt; d.x += d.vy*this.tanR*dt; if(d.y > H + 20){ d.y = -d.len - Math.random()*40; d.x = Math.random()*(W+240)-120; } if(d.x > W+120) d.x -= W+240; if(d.x < -120) d.x += W+240; }
     for(const f of this.flakes){ f.y += f.vy*dt; f.x += (f.vy*this.tanS + Math.sin(this.t*0.9 + f.ph)*f.sw*0.6)*dt; if(f.y > H + 5){ f.y = -5; f.x = Math.random()*W; } if(f.x > W+10) f.x = -10; if(f.x < -10) f.x = W+10; }
     for(const h of this.hail){ h.y += h.vy*dt; h.x += h.vy*this.tanH*dt; if(h.y > H + 5){ h.y = -5; h.x = Math.random()*W; } if(h.x > W+10) h.x -= W+20; if(h.x < -10) h.x += W+20; }
     for(const b of this.fogBands){ b.x += b.v*dt; if(b.x > W + b.w*0.6) b.x = -b.w*0.6; if(b.x < -b.w*0.6) b.x = W + b.w*0.6; }
@@ -1573,11 +1584,15 @@ class Scene{
     }
     // déšť
     if(this.drops.length){
-      ctx.globalAlpha = A; ctx.strokeStyle = this.dark ? 'rgba(175,200,235,.38)' : 'rgba(55,85,130,.32)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
-      ctx.beginPath();
+      // každá hloubka jedním tahem: vzdálené tenké a průsvitné, blízké silnější
+      const col = this.dark ? '200,218,248' : '38,70,118', al = this.dark ? [.38,.55,.78] : [.30,.45,.62], lw = [.9,1.25,1.7];
       const cs = Math.cos(Math.atan(this.tanR)), sn = Math.sin(Math.atan(this.tanR));
-      for(const d of this.drops){ ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - sn*d.len, d.y - cs*d.len); }
-      ctx.stroke();
+      ctx.lineCap = 'round';
+      for(let k=0;k<3;k++){
+        ctx.globalAlpha = A; ctx.strokeStyle = `rgba(${col},${al[k]})`; ctx.lineWidth = lw[k]; ctx.beginPath();
+        for(const d of this.drops) if(d.b === k){ ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - sn*d.len, d.y - cs*d.len); }
+        ctx.stroke();
+      }
     }
     if(this.flakes.length){
       ctx.globalAlpha = A; ctx.fillStyle = this.dark ? 'rgba(240,245,255,.85)' : 'rgba(255,255,255,.95)';
@@ -1597,6 +1612,15 @@ class Scene{
       }
       if(this.flash > 0){ ctx.globalAlpha = A*this.flash*0.16; ctx.fillStyle = '#e1e8ff'; ctx.fillRect(0, 0, W, H); }
     }
+    ctx.restore();
+  }
+  /** blízké kapky deště na samostatném plátně nad kartami (při omezeném pohybu se nekreslí) */
+  drawFg(ctx, A, still){
+    if(still || !this.fgDrops || !this.fgDrops.length || A <= 0.001) return;
+    const cs = Math.cos(Math.atan(this.tanR)), sn = Math.sin(Math.atan(this.tanR));
+    ctx.save(); ctx.globalAlpha = A; ctx.lineCap = 'round'; ctx.lineWidth = 1.8;
+    ctx.strokeStyle = this.dark ? 'rgba(210,226,255,.30)' : 'rgba(40,72,120,.26)';
+    ctx.beginPath(); for(const d of this.fgDrops){ ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - sn*d.len, d.y - cs*d.len); } ctx.stroke();
     ctx.restore();
   }
   drawSun(ctx, x, y, R, a, alt, fog, t){
@@ -1648,6 +1672,7 @@ const Sky = {
   cv:null, ctx:null, W:0, H:0, cur:null, prev:null, fade:1, raf:0, last:0, key:'', params:null,
   init(){
     this.cv = $('#sky'); this.ctx = this.cv.getContext('2d');
+    this.cvFg = $('#skyFg'); this.ctxFg = this.cvFg.getContext('2d');
     this.rm = matchMedia('(prefers-reduced-motion: reduce)');
     this.tick = this.tick.bind(this);
     this.resize();
@@ -1662,8 +1687,8 @@ const Sky = {
     if(Math.abs(W - this.W) < 1 && Math.abs(H - this.H) < 1 && this.dpr === dpr) return;
     const widthChanged = Math.abs(W - this.W) >= 1;
     this.W = W; this.H = H; this.dpr = dpr;
-    this.cv.width = Math.round(W*dpr); this.cv.height = Math.round(H*dpr);
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.cv.width = this.cvFg.width = Math.round(W*dpr); this.cv.height = this.cvFg.height = Math.round(H*dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); this.ctxFg.setTransform(dpr, 0, 0, dpr, 0, 0);
     if(this.cur){ if(widthChanged) this.cur.layout(W, H); else { this.cur.W = W; this.cur.H = H; } }
     this.prev = null; this.fade = 1;
     this.kick();
@@ -1692,19 +1717,19 @@ const Sky = {
     this.raf = requestAnimationFrame(this.tick);
   },
   paint(dt, still){
-    const ctx = this.ctx; ctx.clearRect(0, 0, this.W, this.H);
+    const ctx = this.ctx, fg = this.ctxFg; ctx.clearRect(0, 0, this.W, this.H); fg.clearRect(0, 0, this.W, this.H);
     if(!this.cur) return;
     if(this.prev && this.fade < 1){
       this.fade = Math.min(1, this.fade + dt/1.2);
       const k = this.fade*this.fade*(3 - 2*this.fade);
       if(!still) this.prev.step(dt);
-      this.prev.draw(ctx, 1 - k, still);
+      this.prev.draw(ctx, 1 - k, still); this.prev.drawFg(fg, 1 - k, still);
       if(!still) this.cur.step(dt);
-      this.cur.draw(ctx, k, still);
+      this.cur.draw(ctx, k, still); this.cur.drawFg(fg, k, still);
       if(this.fade >= 1) this.prev = null;
     }else{
       if(!still) this.cur.step(dt); else this.cur.updateAstro(false);
-      this.cur.draw(ctx, 1, still);
+      this.cur.draw(ctx, 1, still); this.cur.drawFg(fg, 1, still);
     }
   }
 };
