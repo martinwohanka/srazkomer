@@ -1,27 +1,59 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-<defs>
-  <linearGradient id="sky" x1="0" y1="0" x2="0.55" y2="1">
-    <stop offset="0" stop-color="#55b4f5"/><stop offset="0.55" stop-color="#2f78de"/><stop offset="1" stop-color="#1c4aa8"/>
-  </linearGradient>
-  <radialGradient id="glow" cx="0.38" cy="0.4" r="0.6">
-    <stop offset="0" stop-color="#ffe7a0" stop-opacity="0.55"/><stop offset="0.6" stop-color="#ffe7a0" stop-opacity="0.08"/><stop offset="1" stop-color="#ffe7a0" stop-opacity="0"/>
-  </radialGradient>
-  <radialGradient id="sun" cx="0.38" cy="0.34" r="0.72">
-    <stop offset="0" stop-color="#fff7cc"/><stop offset="0.42" stop-color="#ffd84d"/><stop offset="1" stop-color="#ff9a2a"/>
-  </radialGradient>
-  <linearGradient id="cloud" gradientUnits="userSpaceOnUse" x1="0" y1="176" x2="0" y2="382">
-    <stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#eef4fc"/><stop offset="1" stop-color="#cfdff4"/>
-  </linearGradient>
-  <filter id="halo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="16"/></filter>
-  <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur stdDeviation="12"/></filter>
-</defs>
-<rect width="512" height="512" rx="112" fill="url(#sky)"/>
-<rect width="512" height="512" rx="112" fill="url(#glow)"/>
-<g transform="translate(256 256) scale(0.86) translate(-256 -226)">
-  <circle cx="200" cy="196" r="112" fill="#ffd34d" opacity="0.5" filter="url(#halo)"/>
-  <g transform="translate(200 196)" stroke="#ffdf73" stroke-width="15" stroke-linecap="round"><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(0)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(30)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(60)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(90)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(120)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(150)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(180)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(210)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(240)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(270)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(300)"/><line x1="0" y1="-114" x2="0" y2="-142" transform="rotate(330)"/></g>
-  <circle cx="200" cy="196" r="92" fill="url(#sun)"/>
-  <g fill="#0b2766" opacity="0.32" filter="url(#shadow)" transform="translate(8 20)"><circle cx="234" cy="310" r="68"/><circle cx="312" cy="266" r="90"/><circle cx="384" cy="316" r="58"/><rect x="170" y="300" width="272" height="82" rx="41"/></g>
-  <g fill="url(#cloud)"><circle cx="234" cy="310" r="68"/><circle cx="312" cy="266" r="90"/><circle cx="384" cy="316" r="58"/><rect x="170" y="300" width="272" height="82" rx="41"/></g>
-</g>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#55b4f5"/>
+      <stop offset=".55" stop-color="#2f78de"/>
+      <stop offset="1" stop-color="#1c4aa8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="296" cy="214" r="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe27a" stop-opacity=".75"/>
+      <stop offset=".45" stop-color="#ffc24a" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#ffc24a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="disc" cx="272" cy="186" r="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff8c9"/>
+      <stop offset=".5" stop-color="#ffd23f"/>
+      <stop offset="1" stop-color="#ff9d1c"/>
+    </radialGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".7" stop-color="#eef4fc"/>
+      <stop offset="1" stop-color="#cddcf0"/>
+    </linearGradient>
+    <radialGradient id="hl" cx="190" cy="230" r="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#0b2a6b" flood-opacity=".35"/>
+    </filter>
+    <clipPath id="cc"><path d="M150 384H360A62 62 0 0 0 372 262A92 92 0 0 0 196 248A72 72 0 0 0 150 384Z"/></clipPath>
+  </defs>
+  <rect id="bg" width="512" height="512" rx="112" fill="url(#sky)"/>
+  <g transform="translate(256 256) scale(.86) translate(-256 -256)">
+    <circle cx="296" cy="214" r="190" fill="url(#glow)"/>
+    <g fill="#ffc83d" transform="translate(296 214)">
+      <rect x="-9" y="-116" width="18" height="34" rx="9"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(30)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(60)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(90)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(120)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(150)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(180)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(210)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(240)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(270)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(300)"/>
+      <rect x="-9" y="-116" width="18" height="34" rx="9" transform="rotate(330)"/>
+    </g>
+    <circle cx="296" cy="214" r="70" fill="url(#disc)"/>
+    <g filter="url(#sh)">
+      <path d="M150 384H360A62 62 0 0 0 372 262A92 92 0 0 0 196 248A72 72 0 0 0 150 384Z" fill="url(#cloud)"/>
+      <g clip-path="url(#cc)">
+        <rect x="90" y="160" width="360" height="240" fill="url(#hl)"/>
+        <ellipse cx="300" cy="380" rx="140" ry="34" fill="#9fb6d6" opacity=".35"/>
+        
+      </g>
+    </g>
+  </g>
 </svg>
