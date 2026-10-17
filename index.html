@@ -317,9 +317,12 @@ footer .made b{color:var(--text);font-weight:500}
 <script>
 'use strict';
 /* ================= verze ================= */
-const VERSION="2.2"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
+const VERSION="2.3"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
 const VERSION_DATE = "17. 10. 2026";
 const CHANGELOG = [
+  {v:"2.3", d:"17. 10. 2026", c:[
+    "Při sněžení padá pár větších vloček i přes karty, stejně jako kapky při dešti."
+  ]},
   {v:"2.2", d:"17. 10. 2026", c:[
     "V hodinovém grafu srážek je teplota na levé ose a srážky na pravé."
   ]},
@@ -1460,7 +1463,11 @@ class Scene{
     this.fgDrops = [];
     const nFg = Math.round(nRain * (dz ? 0.06 : 0.12));
     for(let i=0;i<nFg;i++){ const z = 1.05 + rnd()*0.3; this.fgDrops.push({ x:rnd()*(W+200)-100, y:rnd()*H, z, len:(dz?16:34)*z + rnd()*10, vy:(dz?700:1350)*z }); }
-    if(this.kind === 'snow'){ const n = Math.round(130*area); for(let i=0;i<n;i++){ const z = 0.4 + rnd()*0.6; this.flakes.push({ x:rnd()*W, y:rnd()*H, r:1 + z*2.2, vy:30 + z*55, ph:rnd()*6.28, sw:8 + rnd()*14 }); } }
+    this.fgFlakes = [];
+    if(this.kind === 'snow'){ const n = Math.round(130*area); for(let i=0;i<n;i++){ const z = 0.4 + rnd()*0.6; this.flakes.push({ x:rnd()*W, y:rnd()*H, r:1 + z*2.2, vy:30 + z*55, ph:rnd()*6.28, sw:8 + rnd()*14 }); }
+      // blízké vločky před kartami — větší, měkké a průsvitné, jen pár
+      const nf = Math.round(n*0.12); for(let i=0;i<nf;i++){ const z = 1.1 + rnd()*0.5; this.fgFlakes.push({ x:rnd()*W, y:rnd()*H, r:2.6 + z*2.2, vy:45 + z*45, ph:rnd()*6.28, sw:12 + rnd()*18 }); }
+      this.flakeSpr = this.makeFlake(); }
     if(this.code === 96 || this.code === 99){ const n = Math.round(45*area); for(let i=0;i<n;i++) this.hail.push({ x:rnd()*W, y:rnd()*H, r:1.4 + rnd()*1.6, vy:700 + rnd()*400 }); }
     // mlha
     this.fogBands = [];
@@ -1504,7 +1511,7 @@ class Scene{
     const W = this.W, H = this.H;
     for(const c of this.clouds){ c.x += this.cloudVx * c.sp2 * dt; if(this.cloudVx > 0 && c.x > W + 20) c.x = -c.w - 20; if(this.cloudVx < 0 && c.x + c.w < -20) c.x = W + 20; }
     for(const arr of [this.drops, this.fgDrops]) for(const d of arr){ d.y += d.vy*dt; d.x += d.vy*this.tanR*dt; if(d.y > H + 20){ d.y = -d.len - Math.random()*40; d.x = Math.random()*(W+240)-120; } if(d.x > W+120) d.x -= W+240; if(d.x < -120) d.x += W+240; }
-    for(const f of this.flakes){ f.y += f.vy*dt; f.x += (f.vy*this.tanS + Math.sin(this.t*0.9 + f.ph)*f.sw*0.6)*dt; if(f.y > H + 5){ f.y = -5; f.x = Math.random()*W; } if(f.x > W+10) f.x = -10; if(f.x < -10) f.x = W+10; }
+    for(const arr of [this.flakes, this.fgFlakes]) for(const f of arr){ f.y += f.vy*dt; f.x += (f.vy*this.tanS + Math.sin(this.t*0.9 + f.ph)*f.sw*0.6)*dt; if(f.y > H + 5){ f.y = -5; f.x = Math.random()*W; } if(f.x > W+10) f.x = -10; if(f.x < -10) f.x = W+10; }
     for(const h of this.hail){ h.y += h.vy*dt; h.x += h.vy*this.tanH*dt; if(h.y > H + 5){ h.y = -5; h.x = Math.random()*W; } if(h.x > W+10) h.x -= W+20; if(h.x < -10) h.x += W+20; }
     for(const b of this.fogBands){ b.x += b.v*dt; if(b.x > W + b.w*0.6) b.x = -b.w*0.6; if(b.x < -b.w*0.6) b.x = W + b.w*0.6; }
     if(this.kind === 'storm'){
@@ -1619,14 +1626,30 @@ class Scene{
     }
     ctx.restore();
   }
-  /** blízké kapky deště na samostatném plátně nad kartami (při omezeném pohybu se nekreslí) */
+  /** měkká vločka (bílý střed, rozmazaný okraj; ve světlém motivu s jemným modrošedým lemem, ať je na světlé kartě vidět) */
+  makeFlake(){
+    const S = 32, c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d'), gr = g.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+    gr.addColorStop(0, '#ffffff'); gr.addColorStop(.4, 'rgba(255,255,255,.9)');
+    if(this.dark){ gr.addColorStop(1, 'rgba(255,255,255,0)'); }
+    else { gr.addColorStop(.62, 'rgba(120,145,185,.45)'); gr.addColorStop(1, 'rgba(120,145,185,0)'); }
+    g.fillStyle = gr; g.fillRect(0, 0, S, S); return c;
+  }
+  /** blízké kapky deště a vločky na samostatném plátně nad kartami (při omezeném pohybu se nekreslí) */
   drawFg(ctx, A, still){
-    if(still || !this.fgDrops || !this.fgDrops.length || A <= 0.001) return;
-    const cs = Math.cos(Math.atan(this.tanR)), sn = Math.sin(Math.atan(this.tanR));
-    ctx.save(); ctx.globalAlpha = A; ctx.lineCap = 'round'; ctx.lineWidth = 1.8;
-    ctx.strokeStyle = this.dark ? 'rgba(210,226,255,.30)' : 'rgba(40,72,120,.26)';
-    ctx.beginPath(); for(const d of this.fgDrops){ ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - sn*d.len, d.y - cs*d.len); } ctx.stroke();
-    ctx.restore();
+    if(still || A <= 0.001) return;
+    if(this.fgDrops && this.fgDrops.length){
+      const cs = Math.cos(Math.atan(this.tanR)), sn = Math.sin(Math.atan(this.tanR));
+      ctx.save(); ctx.globalAlpha = A; ctx.lineCap = 'round'; ctx.lineWidth = 1.8;
+      ctx.strokeStyle = this.dark ? 'rgba(210,226,255,.30)' : 'rgba(40,72,120,.26)';
+      ctx.beginPath(); for(const d of this.fgDrops){ ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - sn*d.len, d.y - cs*d.len); } ctx.stroke();
+      ctx.restore();
+    }
+    if(this.fgFlakes && this.fgFlakes.length){
+      ctx.save(); ctx.globalAlpha = A*(this.dark ? .6 : .75);
+      for(const f of this.fgFlakes){ const d = f.r*2.6; ctx.drawImage(this.flakeSpr, f.x - d/2, f.y - d/2, d, d); }
+      ctx.restore();
+    }
   }
   drawSun(ctx, x, y, R, a, alt, fog, t){
     const low = clamp(1 - (alt - 2)/14, 0, 1);
