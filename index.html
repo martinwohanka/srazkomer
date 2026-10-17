@@ -317,9 +317,12 @@ footer .made b{color:var(--text);font-weight:500}
 <script>
 'use strict';
 /* ================= verze ================= */
-const VERSION="2.1"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
-const VERSION_DATE = "14. 10. 2026";
+const VERSION="2.2"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
+const VERSION_DATE = "17. 10. 2026";
 const CHANGELOG = [
+  {v:"2.2", d:"17. 10. 2026", c:[
+    "V hodinovém grafu srážek je teplota na levé ose a srážky na pravé."
+  ]},
   {v:"2.1", d:"14. 10. 2026", c:[
     "Déšť na pozadí je výraznější – hustší, v několika vrstvách a pár blízkých kapek padá i přes karty."
   ]},
@@ -900,14 +903,16 @@ function arrowG(x, y, deg, color, sz=6){
   if(deg == null) return '';
   return `<path transform="translate(${n1(x)},${n1(y)}) rotate(${Math.round((deg+180)%360)})" d="M0,${-sz}L${sz*.72},${sz*.8}L0,${sz*.38}L${-sz*.72},${sz*.8}Z" fill="${color}"/>`;
 }
-function gridAxis(G, P, top, unit){
+/* mřížka a popisky osy; right = popisky u pravého okraje (hodinový graf srážek má vlevo teplotu) */
+function gridAxis(G, P, top, unit, right=false){
+  const ax = right ? `x="${G.W-G.R+5}"` : `x="${G.L-6}" text-anchor="end"`;
   let s = '';
   for(let k=0;k<=4;k++){
     const v = top*k/4, y = G.y0 - G.ph*k/4;
     s += `<line x1="${G.L}" x2="${G.W-G.R}" y1="${n1(y)}" y2="${n1(y)}" stroke="${P.grid}" stroke-dasharray="${k?'3 4':'0'}"/>`;
-    s += `<text class="ax" x="${G.L-6}" y="${n1(y+3.2)}" text-anchor="end">${fx(Math.round(v*10)/10)}</text>`;
+    s += `<text class="ax" ${ax} y="${n1(y+3.2)}">${fx(Math.round(v*10)/10)}</text>`;
   }
-  s += `<text class="axu" x="${G.L-6}" y="${G.T-8}" text-anchor="end">${unit}</text>`;
+  s += `<text class="axu" ${ax} y="${G.T-8}">${unit}</text>`;
   return s;
 }
 function nowLine(G, P, hs, nowL){
@@ -973,9 +978,9 @@ function svgHourlyPrecip(G, hs, P){
   let lo = Math.floor(Math.min(...ts))-1, hi = Math.ceil(Math.max(...ts))+1;
   if(hi - lo < 4){ const m = (hi+lo)/2; lo = Math.floor(m-2); hi = lo+4; }
   const yT = v => G.y0 - G.ph*(v-lo)/(hi-lo);
-  let s = gridAxis(G, P, top, 'MM/H');
-  for(let k=0;k<=4;k++){ const v = lo + (hi-lo)*k/4; s += `<text class="ax" x="${G.W-G.R+5}" y="${n1(G.y0-G.ph*k/4+3.2)}">${Math.round(v)}°</text>`; }
-  s += `<text class="axu" x="${G.W-G.R+5}" y="${G.T-8}">°C</text>`;
+  let s = gridAxis(G, P, top, 'MM/H', true);
+  for(let k=0;k<=4;k++){ const v = lo + (hi-lo)*k/4; s += `<text class="ax" x="${G.L-6}" y="${n1(G.y0-G.ph*k/4+3.2)}" text-anchor="end">${Math.round(v)}°</text>`; }
+  s += `<text class="axu" x="${G.L-6}" y="${G.T-8}" text-anchor="end">°C</text>`;
   s += midnights(G, P, hs, S.view.nowL);
   const bw = Math.max(1.6, G.slot*0.66);
   s += '<g class="grow">';
