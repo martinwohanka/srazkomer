@@ -317,9 +317,12 @@ footer .made b{color:var(--text);font-weight:500}
 <script>
 'use strict';
 /* ================= verze ================= */
-const VERSION="2.3"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
-const VERSION_DATE = "17. 10. 2026";
+const VERSION="2.4"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
+const VERSION_DATE = "19. 10. 2026";
 const CHANGELOG = [
+  {v:"2.4", d:"19. 10. 2026", c:[
+    "V kartě počasí přibyla výška Slunce nad obzorem pro vybrané místo – aktuální a dnešní nejvyšší i s časem."
+  ]},
   {v:"2.3", d:"17. 10. 2026", c:[
     "Při sněžení padá pár větších vloček i přes karty, stejně jako kapky při dešti."
   ]},
@@ -447,7 +450,8 @@ function horiz(ra, dec, d, lat, lng){
   const az = Math.atan2(Math.sin(H), Math.cos(H)*Math.sin(phi) - Math.tan(dec)*Math.cos(phi)) + Math.PI; // od severu po směru hodin
   return { alt, az };
 }
-function refraction(h){ if(h < -0.035) h = -0.035; return 0.0002967 / Math.tan(h + 0.00312536/(h + 0.08901179)); }
+/* lom světla v atmosféře; pod obzorem plynule ubývá k nule (při −2° už žádný), ať výška pod obzorem odpovídá geometrii */
+function refraction(h){ const r = k => 0.0002967 / Math.tan(k + 0.00312536/(k + 0.08901179)); return h >= 0 ? r(h) : r(0)*clamp(1 + h/0.035, 0, 1); }
 function sunPos(ms, lat, lng){ const d = toDays(ms), s = sunCoords(d); const p = horiz(s.ra, s.dec, d, lat, lng); p.alt += refraction(p.alt); return p; }
 function moonPos(ms, lat, lng){
   const d = toDays(ms), m = moonCoords(d); const p = horiz(m.ra, m.dec, d, lat, lng);
@@ -536,6 +540,7 @@ const ICON = {
   rise:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f0a35e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 18a7 7 0 0 1 14 0M2 18h20M12 3v6M9 6l3-3 3 3"/></svg>',
   set:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e07a5a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 18a7 7 0 0 1 14 0M2 18h20M12 3v6M9 6l3 3 3-3"/></svg>',
   drop:'<svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path fill="#46c8e8" d="M12 2.5s-7 7.6-7 12.3a7 7 0 0 0 14 0C19 10.1 12 2.5 12 2.5z"/></svg>',
+  alt:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 20h20M4 20 18 9" stroke="currentColor" opacity=".55"/><path d="M11 20a7 7 0 0 0-.9-3.4" stroke="#f0a35e"/><circle cx="18.5" cy="6.5" r="3" fill="#ffc43d" stroke="none"/></svg>',
   uv:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f5c84a" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>'
 };
 
@@ -674,6 +679,7 @@ function renderNow(){
   const chips = [];
   if(td && td.rise) chips.push(`<span class="chip" title="východ slunce">${ICON.rise}${hhmm(td.rise)}</span>`);
   if(td && td.set) chips.push(`<span class="chip" title="západ slunce">${ICON.set}${hhmm(td.set)}</span>`);
+  chips.push(`<span class="chip" id="sunAlt" title="výška Slunce nad obzorem teď a dnešní nejvyšší (v poledne)">${sunAltHtml()}</span>`);
   if(c.rh!=null) chips.push(`<span class="chip" title="vlhkost">${ICON.drop}${Math.round(c.rh)}\u00a0%</span>`);
   if(c.uv!=null) chips.push(`<span class="chip" title="UV index">${ICON.uv}UV ${Math.round(c.uv)}</span>`);
   chips.push(`<span class="chip moon" title="Měsíc">${moonSvg}${phaseName(nowUtc)} ${Math.round(ph.frac*100)}\u00a0% · ${nextEv}</span>`);
@@ -715,6 +721,26 @@ function statusText(V){
   const h = V.hours[bi];
   return `Nejsilnější náraz <b>${whenTxt(h.t, nowL)}</b> (${f1(h.wg)} m/s, ${windWord(h.wg)}).`;
 }
+
+/* ---------- výška Slunce ---------- */
+/** výška Slunce nad obzorem teď a dnešní maximum (kulminace) v místě předpovědi; stupně */
+function sunAltInfo(){
+  if(!S.place || !S.data) return null;
+  const { lat, lon } = S.place, now = Date.now(), off = S.data.off, deg = r => r/RAD;
+  const cur = deg(sunPos(now, lat, lon).alt);
+  const day0 = dayNo(now + off)*864e5 - off;                 // místní půlnoc v UTC
+  let best = -Infinity, bt = day0;
+  for(let t = day0; t <= day0 + 864e5; t += 10*60e3){ const a = sunPos(t, lat, lon).alt; if(a > best){ best = a; bt = t; } }
+  for(let t = bt - 10*60e3; t <= bt + 10*60e3; t += 60e3){ const a = sunPos(t, lat, lon).alt; if(a > best){ best = a; bt = t; } }
+  return { cur, max: deg(best), tMax: bt + off };
+}
+function sunAltHtml(){
+  const i = sunAltInfo(); if(!i) return '';
+  const c = Math.round(i.cur), m = Math.round(i.max), fmt = v => (v === 0 ? 0 : v) + '°';
+  const now = i.cur >= -0.83 ? `Slunce ${fmt(c)}` : `Slunce pod obzorem ${fmt(c)}`;
+  return `${ICON.alt}${now} · max ${fmt(m)} v ${hhmm(i.tMax)}`;
+}
+function updateSunAlt(){ const el = document.getElementById('sunAlt'); if(el) el.innerHTML = sunAltHtml(); }
 
 /* ---------- kontextové rady ---------- */
 const TIPS = {
@@ -1789,7 +1815,7 @@ function init(){
   if(last && typeof last.lat === 'number' && typeof last.lon === 'number') setPlace(last, false);
   else geolocate(false).then(ok => { if(!ok) setPlace(DEFAULT_PLACE); });
   setInterval(() => { if(!document.hidden && S.place) load(); }, 10*60e3);
-  setInterval(() => { renderUpdated(); }, 30e3);
+  setInterval(() => { renderUpdated(); if(!document.hidden) updateSunAlt(); }, 30e3);
   setInterval(() => { if(S.view && !document.hidden){ const v = buildView(); if(v && v.i0 !== S.view.i0) render(); } }, 60e3);
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => {
