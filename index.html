@@ -317,9 +317,12 @@ footer .made b{color:var(--text);font-weight:500}
 <script>
 'use strict';
 /* ================= verze ================= */
-const VERSION="2.4"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
+const VERSION="2.5"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
 const VERSION_DATE = "19. 10. 2026";
 const CHANGELOG = [
+  {v:"2.5", d:"19. 10. 2026", c:[
+    "Údaje v kartě počasí mají nové pořadí: vlhkost, UV, východ a západ slunce, výška Slunce a Měsíc."
+  ]},
   {v:"2.4", d:"19. 10. 2026", c:[
     "V kartě počasí přibyla výška Slunce nad obzorem pro vybrané místo – aktuální a dnešní nejvyšší i s časem."
   ]},
@@ -677,11 +680,11 @@ function renderNow(){
   const nextEv = tFull < tNew ? 'úplněk '+dm(tFull+off) : 'nov '+dm(tNew+off);
   const moonSvg = `<svg width="15" height="15" viewBox="0 0 20 20" aria-hidden="true">${moonDisc(10,10,8.5,ph.frac,litR)}</svg>`;
   const chips = [];
+  if(c.rh!=null) chips.push(`<span class="chip" title="vlhkost">${ICON.drop}${Math.round(c.rh)}\u00a0%</span>`);
+  if(c.uv!=null) chips.push(`<span class="chip" title="UV index">${ICON.uv}UV ${Math.round(c.uv)}</span>`);
   if(td && td.rise) chips.push(`<span class="chip" title="východ slunce">${ICON.rise}${hhmm(td.rise)}</span>`);
   if(td && td.set) chips.push(`<span class="chip" title="západ slunce">${ICON.set}${hhmm(td.set)}</span>`);
   chips.push(`<span class="chip" id="sunAlt" title="výška Slunce nad obzorem teď a dnešní nejvyšší (v poledne)">${sunAltHtml()}</span>`);
-  if(c.rh!=null) chips.push(`<span class="chip" title="vlhkost">${ICON.drop}${Math.round(c.rh)}\u00a0%</span>`);
-  if(c.uv!=null) chips.push(`<span class="chip" title="UV index">${ICON.uv}UV ${Math.round(c.uv)}</span>`);
   chips.push(`<span class="chip moon" title="Měsíc">${moonSvg}${phaseName(nowUtc)} ${Math.round(ph.frac*100)}\u00a0% · ${nextEv}</span>`);
   const tips = computeTips(V);
   el.innerHTML = `
