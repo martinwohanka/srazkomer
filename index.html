@@ -150,7 +150,8 @@ h1{margin:3px 0 0;font:800 30px/1.05 var(--fh);letter-spacing:-.02em}
 .tile .s{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* odměrný válec srážkoměru v dlaždici úhrnu */
 .tile.has-gauge{position:relative;padding-right:54px}
-.gauge{position:absolute;right:8px;top:7px;bottom:7px;width:42px}
+.gauge{position:absolute;right:8px;top:23px;bottom:5px;width:42px}
+.tile.has-gauge .l{margin-right:-46px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* nadpis přes celou šířku, válec až pod ním */
 .gauge svg{display:block;width:100%;height:100%;overflow:visible}
 .gauge .gw{transform-box:fill-box;transform-origin:50% 100%;animation:gfill 1.1s cubic-bezier(.2,.8,.2,1) .15s both}
 @keyframes gfill{from{transform:scaleY(0)}to{transform:scaleY(1)}}
@@ -324,9 +325,12 @@ footer .made b{color:var(--text);font-weight:500}
 <script>
 'use strict';
 /* ================= verze ================= */
-const VERSION="2.6"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
+const VERSION="2.7"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
 const VERSION_DATE = "24. 10. 2026";
 const CHANGELOG = [
+  {v:"2.7", d:"24. 10. 2026", c:[
+    "Odměrný válec má i dlaždice „Spadlo za 24 h“."
+  ]},
   {v:"2.6", d:"24. 10. 2026", c:[
     "Dlaždice s úhrnem srážek má odměrný válec srážkoměru – hladina ukazuje, kolik napadá."
   ]},
@@ -874,7 +878,7 @@ function renderTiles(){
       const hs = V.hours, n = hs.length, tot = sum(hs.map(x=>x.p)), gmax = Math.max(...hs.map(x=>x.wg));
       const wetH = hs.filter(x=>x.p>=0.1).length;
       h += tile(`Úhrn ${n} h`, C1, `${f1(tot)}<small>mm</small>`, wetH ? `srážky ${wetH} h` : 'bez srážek', gaugeSvg(tot));
-      h += tile('Spadlo za 24 h', C2, `${f1(V.past24)}<small>mm</small>`, 'uplynulých');
+      h += tile('Spadlo za 24 h', C2, `${f1(V.past24)}<small>mm</small>`, 'uplynulých', gaugeSvg(V.past24));
       h += tile('Teplota', C3, `${fmtT(Math.min(...hs.map(x=>x.temp)))} – ${fmtT(Math.max(...hs.map(x=>x.temp)))}`, `příštích ${n} h`);
       h += tile('Max náraz větru', C4, `${f1(gmax)}<small>m/s</small>`, windWord(gmax));
     }
