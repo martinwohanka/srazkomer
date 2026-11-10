@@ -1,6 +1,6 @@
 /* Srážkoměr – service worker
    Při každé změně souborů appky zvyš název cache. */
-const CACHE = 'srazkomer-v2.8';
+const CACHE = 'srazkomer-v2.9';
 const ASSETS = [
   './',
   './index.html',

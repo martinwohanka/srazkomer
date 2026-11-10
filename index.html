@@ -18,6 +18,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600&display=swap">
 <script>
+/* stránka načtená přes http → https (poloha, offline režim a service worker fungují jen na https) */
+if(location.protocol==='http:'&&!/^(localhost|127\.|192\.168\.|10\.|\[::1\])/.test(location.hostname))location.replace('https://'+location.host+location.pathname+location.search+location.hash);
 /* převod nastavení z verzí 1.x, které ukládaly prostý text místo JSON */
 ['theme','mode','metric','mapov'].forEach(function(k){try{var v=localStorage.getItem('srk.'+k);if(v!=null){try{JSON.parse(v)}catch(e){localStorage.setItem('srk.'+k,JSON.stringify(v))}}}catch(e){}});
 (function(){var t=null;try{t=JSON.parse(localStorage.getItem('srk.theme'))}catch(e){}
@@ -105,7 +107,16 @@ h1{margin:3px 0 0;font:800 30px/1.05 var(--fh);letter-spacing:-.02em}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--chipb);font:500 12.5px/1.3 var(--fm);white-space:nowrap}
 .chip svg{flex:none}
-.chip.moon{white-space:normal;max-width:100%}
+.chip.moon,.chip.wrap{white-space:normal;max-width:100%}
+/* srážky v příštích 2 hodinách */
+.nowcast{margin:12px 0 0;padding:9px 11px 7px;border-radius:14px;background:var(--chip);border:1px solid var(--chipb)}
+.nowcast.dry{padding:7px 11px;font-size:13.5px;color:var(--muted)}
+.nc-msg{margin:0;font-size:14px;line-height:1.35}
+.nc-msg b{color:var(--accent);white-space:nowrap}
+.nc-sum{font:500 12px var(--fm);color:var(--muted);white-space:nowrap}
+.nc-bars{display:flex;align-items:flex-end;gap:3px;height:30px;margin-top:7px}
+.nc-bars i{flex:1;border-radius:3px 3px 1px 1px;min-height:2px}
+.nc-lab{display:flex;justify-content:space-between;font:500 10.5px var(--fm);color:var(--muted);margin-top:3px}
 .status{display:flex;gap:9px;align-items:baseline;margin:13px 2px 0;font-size:14.5px}
 .status .dot{width:8px;height:8px;border-radius:50%;background:#3d8de0;box-shadow:0 0 0 3px rgba(61,141,224,.22);flex:none;transform:translateY(-1px)}
 .status b{color:var(--accent);white-space:nowrap}
@@ -214,6 +225,7 @@ footer .row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 footer .made{text-align:center;margin-top:8px}
 footer .made b{color:var(--text);font-weight:500}
 .ver{border:0;background:none;padding:0;cursor:pointer;color:var(--accent);font:inherit;text-decoration:underline dotted;text-underline-offset:3px}
+:root[data-theme="light"] .ver{color:#1d4fb8}
 /* toasts */
 .toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 16px);z-index:50;display:flex;flex-direction:column;gap:8px;width:min(440px,calc(100% - 24px));pointer-events:none}
 .toast{pointer-events:auto;display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 10px 10px 15px;border-radius:16px;background:var(--pop);border:1px solid var(--gb);box-shadow:0 10px 30px rgba(0,0,0,.3);font-size:14px;animation:enter .3s ease both}
@@ -277,7 +289,7 @@ footer .made b{color:var(--text);font-weight:500}
 
   <section class="panel glass fade" aria-labelledby="stripLbl">
     <div class="ph" id="stripLbl">výhled po hodinách</div>
-    <div class="strip" id="strip"></div>
+    <div class="strip" id="strip" tabindex="0" aria-label="Výhled, posun do stran šipkami"></div>
   </section>
 
   <section class="panel glass fade" aria-label="Graf předpovědi">
@@ -315,7 +327,7 @@ footer .made b{color:var(--text);font-weight:500}
 
   <footer>
     <div class="row"><span>data: Open-Meteo · Windy</span><span id="updated"></span></div>
-    <div class="made">vyrobil <b>Martin Wohanka</b> · <button class="ver" id="verBtn" type="button" aria-label="Seznam změn"></button> · <span id="verDate"></span></div>
+    <div class="made">vyrobil <b>Martin Wohanka</b> · <button class="ver" id="verBtn" type="button"></button> · <span id="verDate"></span></div>
   </footer>
 </main>
 
@@ -325,9 +337,16 @@ footer .made b{color:var(--text);font-weight:500}
 <script>
 'use strict';
 /* ================= verze ================= */
-const VERSION="2.8"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
-const VERSION_DATE = "24. 10. 2026";
+const VERSION="2.9"; // bez mezer kolem „=" — verze 1.x hledají novou verzi výrazem const VERSION="…"
+const VERSION_DATE = "10. 11. 2026";
 const CHANGELOG = [
+  {v:"2.9", d:"10. 11. 2026", c:[
+    "Nové: srážky v příštích 2 hodinách po 15 minutách – kdy začne nebo přestane pršet a malý graf.",
+    "Oprava: srážky, nárazy větru a UV se ukazovaly o hodinu později – údaj u 18:00 teď znamená 18:00–19:00.",
+    "Oprava: údaj o výšce Slunce se na menších telefonech už nevejde mimo kartu.",
+    "Stránka otevřená přes http se sama přepne na zabezpečené https.",
+    "Lepší ovládání pro čtečky obrazovky a klávesnici."
+  ]},
   {v:"2.8", d:"24. 10. 2026", c:[
     "Odměrné válce mají stupnici vždy aspoň do 30 mm, při vyšších úhrnech se zvětší po 10 mm."
   ]},
@@ -580,7 +599,7 @@ const tipPick = new Map();
 /* ================= data ================= */
 const HOURLY = 'precipitation,precipitation_probability,temperature_2m,apparent_temperature,relativehumidity_2m,uv_index,windspeed_10m,windgusts_10m,winddirection_10m,weathercode,cloud_cover,is_day';
 const DAILY = 'precipitation_sum,precipitation_probability_max,temperature_2m_max,temperature_2m_min,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,weathercode,sunrise,sunset';
-const apiUrl = (lat, lon) => `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=${HOURLY}&daily=${DAILY}&forecast_days=14&past_days=1&timezone=auto`;
+const apiUrl = (lat, lon) => `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=${HOURLY}&daily=${DAILY}&minutely_15=precipitation&forecast_minutely_15=12&forecast_days=14&past_days=1&timezone=auto`;
 
 async function fetchJSON(url, ms=12000){
   const ac = new AbortController(); const to = setTimeout(()=>ac.abort(), ms);
@@ -596,7 +615,14 @@ function prepare(raw){
     uv: g(H,'uv_index',i), ws: kmh2ms(g(H,'windspeed_10m',i)) ?? 0, wg: kmh2ms(g(H,'windgusts_10m',i)) ?? 0,
     wd: g(H,'winddirection_10m',i), code: g(H,'weathercode',i) ?? 3, cc: g(H,'cloud_cover',i), day: g(H,'is_day',i)
   }));
+  /* Open-Meteo uvádí srážky, jejich pravděpodobnost, nárazy větru a UV za PŘEDCHOZÍ hodinu (hodnota v 19:00 = 18:00–19:00).
+     V appce hodina t znamená interval t až t+1 h, proto tyto hodnoty posouváme o hodinu zpět. Teplota, oblačnost a kód počasí jsou okamžité. */
+  for(let i=0;i<hours.length;i++){ const nx = i+1 < hours.length ? i+1 : -1;
+    hours[i].p = nx >= 0 ? (g(H,'precipitation',nx) ?? 0) : 0; hours[i].pp = nx >= 0 ? g(H,'precipitation_probability',nx) : null;
+    hours[i].wg = nx >= 0 ? (kmh2ms(g(H,'windgusts_10m',nx)) ?? 0) : hours[i].ws; hours[i].uv = nx >= 0 ? g(H,'uv_index',nx) : null; }
   for(const h of hours){ if(h.wg < h.ws) h.wg = h.ws; }
+  /* srážky po 15 minutách (střední Evropa: model ICON-D2, jinde dopočtené); hodnota v čase t = srážky za 15 min před t */
+  const M = raw.minutely_15, q15 = M && M.time ? M.time.map((s,i)=>({ t: parseLocal(s), p: (M.precipitation && M.precipitation[i]) ?? 0 })) : [];
   const days = Dd.time.map((s,i)=>({
     t: parseLocal(s), p: g(Dd,'precipitation_sum',i) ?? 0, pp: g(Dd,'precipitation_probability_max',i),
     tmax: g(Dd,'temperature_2m_max',i) ?? 0, tmin: g(Dd,'temperature_2m_min',i) ?? 0,
@@ -605,7 +631,7 @@ function prepare(raw){
     rise: Dd.sunrise && Dd.sunrise[i] ? parseLocal(Dd.sunrise[i]) : null, set: Dd.sunset && Dd.sunset[i] ? parseLocal(Dd.sunset[i]) : null
   }));
   for(const d of days){ if(d.wg < d.ws) d.wg = d.ws; }
-  return { off, hours, days };
+  return { off, hours, days, q15 };
 }
 const nowLocal = () => Date.now() + (S.data ? S.data.off : 0);
 function buildView(){
@@ -616,8 +642,11 @@ function buildView(){
   const hours = D.hours.slice(i0, i0 + n);
   let d0 = D.days.findIndex(d => dayNo(d.t) === dayNo(nowL)); if(d0 < 0) d0 = 0;
   const days = D.days.slice(d0, d0 + 14);
-  const past = D.hours.filter(h => h.t > nowL - 24*3600e3 && h.t <= nowL);
-  return { nowL, i0, hours, all: D.hours, days, today: D.days[d0], past24: sum(past.map(h=>h.p)), cur: D.hours[i0] };
+  // uplynulých 24 h = celé hodiny, které už skončily (interval t až t+1 h končí nejpozději teď)
+  const past = D.hours.filter(h => h.t + 3600e3 > nowL - 24*3600e3 && h.t + 3600e3 <= nowL);
+  // příští 2 hodiny po 15 minutách: interval obsahující teď a sedm dalších
+  const nc = (D.q15 || []).filter(q => q.t > nowL).slice(0, 8);
+  return { nowL, i0, hours, all: D.hours, days, today: D.days[d0], past24: sum(past.map(h=>h.p)), cur: D.hours[i0], nc: nc.length >= 6 ? nc : null };
 }
 
 async function load(opts={}){
@@ -701,7 +730,7 @@ function renderNow(){
   if(c.uv!=null) chips.push(`<span class="chip" title="UV index">${ICON.uv}UV ${Math.round(c.uv)}</span>`);
   if(td && td.rise) chips.push(`<span class="chip" title="východ slunce">${ICON.rise}${hhmm(td.rise)}</span>`);
   if(td && td.set) chips.push(`<span class="chip" title="západ slunce">${ICON.set}${hhmm(td.set)}</span>`);
-  chips.push(`<span class="chip" id="sunAlt" title="výška Slunce nad obzorem teď a dnešní nejvyšší (v poledne)">${sunAltHtml()}</span>`);
+  chips.push(`<span class="chip wrap" id="sunAlt" title="výška Slunce nad obzorem teď a dnešní nejvyšší (v poledne)">${sunAltHtml()}</span>`);
   chips.push(`<span class="chip moon" title="Měsíc">${moonSvg}${phaseName(nowUtc)} ${Math.round(ph.frac*100)}\u00a0% · ${nextEv}</span>`);
   const tips = computeTips(V);
   el.innerHTML = `
@@ -714,6 +743,7 @@ function renderNow(){
       </div>
     </div>
     <div class="chips">${chips.join('')}</div>
+    ${nowcastHtml(V)}
     <p class="status"><span class="dot" aria-hidden="true"></span><span>${statusText(V)}</span></p>
     ${tips.length?`<div class="tips">${tips.map(t=>`<div class="tip${t.serious?' serious':''}"><span class="ti" aria-hidden="true">${t.icon}</span><span>${t.html}</span></div>`).join('')}</div>`:''}`;
 }
@@ -740,6 +770,31 @@ function statusText(V){
   let bi = 0; V.hours.forEach((h,i) => { if(h.wg > V.hours[bi].wg) bi = i; });
   const h = V.hours[bi];
   return `Nejsilnější náraz <b>${whenTxt(h.t, nowL)}</b> (${f1(h.wg)} m/s, ${windWord(h.wg)}).`;
+}
+
+/* ---------- příští 2 hodiny po 15 minutách ---------- */
+const NC_WET = 0.05;   // mm za 15 minut (≈ 0,2 mm/h) — od kdy to bereme jako srážky
+function nowcastHtml(V){
+  const nc = V.nc; if(!nc) return '';
+  const start = q => q.t - 15*60e3, wet = nc.map(q => q.p >= NC_WET), snow = V.cur && V.cur.temp <= 0.5;
+  const verb = snow ? 'sněžit' : 'pršet', noun = snow ? 'Sněží' : 'Prší';
+  const total = sum(nc.map(q => q.p));
+  let msg;
+  if(!wet.some(Boolean)) msg = 'Příští 2 hodiny bez srážek.';
+  else if(wet[0]){
+    const k = wet.indexOf(false);
+    msg = k < 0 ? `${noun} a v příštích 2 hodinách nepřestane.` : `${noun}, přestane kolem <b>${hhmm(start(nc[k]))}</b>.`;
+  }else{
+    const k = wet.indexOf(true); let n = 0; while(k+n < wet.length && wet[k+n]) n++;
+    msg = k+n >= wet.length ? `Začne ${verb} kolem <b>${hhmm(start(nc[k]))}</b> a do ${hhmm(nc[nc.length-1].t)} nepřestane.`
+                            : `Začne ${verb} kolem <b>${hhmm(start(nc[k]))}</b>, asi ${n*15} min.`;
+  }
+  if(!wet.some(Boolean)) return `<p class="nowcast dry">${msg}</p>`;
+  const top = Math.max(0.5, ...nc.map(q => q.p));
+  const bars = nc.map((q,i) => `<i style="height:${Math.max(6, q.p/top*100).toFixed(0)}%;background:${q.p >= NC_WET ? precipColor(q.p*4) : 'var(--chipb)'}" title="${hhmm(start(q))}–${hhmm(q.t)} · ${f1(q.p)} mm"></i>`).join('');
+  const labs = [0,2,4,6].map(i => `<span>${i ? hhmm(start(nc[i])) : 'teď'}</span>`).join('') + `<span>${hhmm(nc[nc.length-1].t)}</span>`;
+  return `<div class="nowcast"><p class="nc-msg">${msg} <span class="nc-sum">celkem ${f1(total)} mm</span></p>
+    <div class="nc-bars" role="img" aria-label="Srážky v příštích 2 hodinách po 15 minutách, celkem ${f1(total)} mm">${bars}</div><div class="nc-lab" aria-hidden="true">${labs}</div></div>`;
 }
 
 /* ---------- výška Slunce ---------- */
@@ -1205,12 +1260,12 @@ function selectBar(i){
   if(S.metric === 'precip'){
     t = daily
       ? `${dayWord(x.t,nowL)}${dayNo(x.t)-dayNo(nowL)<2?' '+dm(x.t):''} · ${f1(x.p)} mm${x.pp!=null?' · '+Math.round(x.pp)+'%':''} · ${wmoText(x.code)} · ${fmtT(x.tmin)} / ${fmtT(x.tmax)} · vítr ${f1(x.ws)} m/s (náraz ${f1(x.wg)})`
-      : `${dayWord(x.t,nowL)} ${hhmm(x.t)} · ${f1(x.p)} mm · ${precipWord(x.p)}${x.pp!=null?' · '+Math.round(x.pp)+'%':''} · ${r1(x.temp)}°C · vítr ${f1(x.ws)} m/s (náraz ${f1(x.wg)})`;
+      : `${dayWord(x.t,nowL)} ${hhmm(x.t)}–${hhmm(x.t+3600e3)} · ${f1(x.p)} mm · ${precipWord(x.p)}${x.pp!=null?' · '+Math.round(x.pp)+'%':''} · ${r1(x.temp)}°C · vítr ${f1(x.ws)} m/s (náraz ${f1(x.wg)})`;
   }else{
     const dir = x.wd!=null ? ` · od ${dirName(x.wd)}` : '';
     t = daily
       ? `${dayWord(x.t,nowL)}${dayNo(x.t)-dayNo(nowL)<2?' '+dm(x.t):''} · max. vítr ${f1(x.ws)} m/s (${windWord(x.ws)}) · náraz ${f1(x.wg)} m/s${dir}`
-      : `${dayWord(x.t,nowL)} ${hhmm(x.t)} · vítr ${f1(x.ws)} m/s (${windWord(x.ws)}) · náraz ${f1(x.wg)} m/s${dir}`;
+      : `${dayWord(x.t,nowL)} ${hhmm(x.t)}–${hhmm(x.t+3600e3)} · vítr ${f1(x.ws)} m/s (${windWord(x.ws)}) · náraz ${f1(x.wg)} m/s${dir}`;
   }
   dt.className = 'detail'; dt.textContent = t;
 }
@@ -1838,7 +1893,7 @@ const Sky = {
 
 /* ================= start ================= */
 function init(){
-  $('#verBtn').textContent = 'v' + VERSION; $('#verDate').textContent = VERSION_DATE;
+  $('#verBtn').textContent = 'v' + VERSION; $('#verBtn').setAttribute('aria-label', 'v' + VERSION + ' – seznam změn'); $('#verDate').textContent = VERSION_DATE;
   $('#verBtn').addEventListener('click', showChangelog);
   applyTheme(S.theme, false);
   $('#themeBtn').addEventListener('click', () => applyTheme(S.theme === 'dark' ? 'light' : 'dark', true));

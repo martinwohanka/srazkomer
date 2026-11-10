@@ -19,6 +19,7 @@ včetně skutečné polohy Slunce a Měsíce na obloze.
 | `index.html` | celá aplikace |
 | `manifest.json` | údaje pro instalaci (PWA) |
 | `sw.js` | service worker – offline kopie appky |
+| `.htaccess` | nastavení serveru: jen https (HSTS), skrytí `README.md`, `CLAUDE.md` a stavu nasazování |
 | `icon.svg`, `icon-*.png` | ikony (PNG vygenerované z `icon.svg`) |
 | `.github/workflows/ftp-deploy.yml` | automatické nasazení na FTP |
 | `CLAUDE.md` | pravidla pro úpravy (verze, seznam změn) |
